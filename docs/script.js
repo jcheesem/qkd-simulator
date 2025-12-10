@@ -57,9 +57,35 @@ function groupBitsFullBytes(bits) {
   return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
 }
 
-// Truncate long sequences for preview only
-function truncate(str, max = 80) {
-  return str.length > max ? str.slice(0, max) + "..." : str;
+// Create truncated display with "Show All" button
+function createTruncatedDisplay(str, id, max = 80) {
+  if (str.length <= max) {
+    return `<span class="code">${str}</span>`;
+  }
+  
+  const truncated = str.slice(0, max) + "...";
+  return `
+    <span class="code" id="${id}-display">${truncated}</span>
+    <button class="show-all-btn" onclick="toggleShowAll('${id}', ${max})">Show All</button>
+    <span class="code" id="${id}-full" style="display:none;">${str}</span>
+  `;
+}
+
+// Toggle between truncated and full display
+function toggleShowAll(id, max) {
+  const displayEl = document.getElementById(`${id}-display`);
+  const fullEl = document.getElementById(`${id}-full`);
+  const btn = event.target;
+  
+  if (fullEl.style.display === "none") {
+    displayEl.style.display = "none";
+    fullEl.style.display = "block";
+    btn.textContent = "Show Less";
+  } else {
+    displayEl.style.display = "inline";
+    fullEl.style.display = "none";
+    btn.textContent = "Show All";
+  }
 }
 
 // Validate binary input (only 0, 1, and spaces)
@@ -121,7 +147,10 @@ function runQKD() {
   // Encrypt: ciphertext = plaintext XOR key (bitwise)
   const ctBits = xorBits(msgBits, keyBitsUsed);
 
-  // Prepare display
+  // Prepare display strings
+  const bitsAStr = bitsA.join("");
+  const basesAStr = basesA.join("");
+  const basesBStr = basesB.join("");
   const groupedKeyAll  = groupBitsFullBytes(siftedKey);
   const groupedKeyUsed = groupBits8(keyBitsUsed);
   const groupedPt      = groupBits8(msgBits);
@@ -137,13 +166,13 @@ function runQKD() {
     <p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
 
     <p><b>Alice bits:</b><br>
-       <span class="code">${truncate(bitsA.join(""))}</span></p>
+       ${createTruncatedDisplay(bitsAStr, 'alice-bits')}</p>
 
     <p><b>Alice bases:</b><br>
-       <span class="code">${truncate(basesA.join(""))}</span></p>
+       ${createTruncatedDisplay(basesAStr, 'alice-bases')}</p>
 
     <p><b>Bob bases:</b><br>
-       <span class="code">${truncate(basesB.join(""))}</span></p>
+       ${createTruncatedDisplay(basesBStr, 'bob-bases')}</p>
 
     <p><b>Sifted key (8-bit groups, full bytes only):</b><br>
        <span class="code">${groupedKeyAll}</span></p>
