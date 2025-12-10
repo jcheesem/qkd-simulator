@@ -97,8 +97,9 @@ function runQKD() {
       <p><b>Sifted key (8-bit groups):</b><br>
          <span class="code">${groupedKey}</span></p>
     
-      <p><b>Encrypted message:</b><br>
+      <p><b>Encrypted message (Base64):</b><br>
          <span class="code">${encrypted}</span></p>
+
 `;
 
 }
