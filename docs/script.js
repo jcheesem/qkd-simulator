@@ -70,8 +70,8 @@ function runQKD() {
     const outEl = document.getElementById("output");
     
     if (message.length === 0) {
-    outEl.innerHTML = "<p>Please enter a message.</p>";
-    return;
+        outEl.innerHTML = "<p>Please enter a message.</p>";
+        return;
     }
     
     // Convert message to bytes and bits (UTF-8)
