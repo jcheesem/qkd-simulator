@@ -122,7 +122,7 @@ button:hover {
 }
 
 .output-section p {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 10px;
