@@ -34,7 +34,10 @@ function encodeMessage(msg, keyBits) {
         )
         .join("");
 }
-
+// Truncate each long sequence for display only
+function truncate(str, max = 120) {
+    return str.length > max ? str.slice(0, max) + "..." : str;
+}
 
 // ------------------- Main BB84 Simulation -------------------
 
