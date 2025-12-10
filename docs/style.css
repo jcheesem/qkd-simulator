@@ -126,10 +126,26 @@ button:hover {
   display: block;
   margin-top: 6px;
   white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: break-all;
+  overflow-wrap: break-word;
   border: 1px solid #e0e6ed;
   color: #2c3e50;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.code-container {
+  position: relative;
+  margin-top: 6px;
+}
+
+.code-scrollable {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #e0e6ed;
+  border-radius: 4px;
+  background: white;
+  padding: 8px 10px;
 }
 
 .show-all-btn {
