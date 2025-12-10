@@ -160,6 +160,38 @@ button:hover {
   padding: 8px 10px;
 }
 
+.subtitle-text {
+  font-size: 12px;
+  color: #95a5a6;
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+.small-text {
+  font-size: 12px !important;
+  color: #7f8c8d;
+}
+
+.key-cipher-section {
+  background: #e8f4f8 !important;
+  border-left: 4px solid #3498db !important;
+  margin-bottom: 20px;
+}
+
+.copy-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin-top: 8px;
+  margin-bottom: 20px;
+  background: #3498db;
+  display: block;
+}
+
+.copy-btn:hover {
+  background: #2980b9;
+}
+
 .show-all-btn {
   font-size: 12px;
   font-family: 'Open Sans', sans-serif !important;
