@@ -1,5 +1,5 @@
 # qkd-simulator
-Encode short messages of ASCII text with a simple quantum key distribution simulation.
+Encode short messages of text with a simple quantum key distribution simulation.
 
 This is not actually secure encryption. This is an educational web simulation to demonstrate the steps of BB84 protocol.
 
