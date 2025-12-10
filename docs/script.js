@@ -23,27 +23,29 @@ function groupBits(bits) {
 
 // XOR–encrypt a string using repeating bits from the key
 function encodeMessage(msg, keyBits) {
-    // Convert message into 8-bit bytes
-    const msgBytes = Array.from(msg).map(ch => ch.charCodeAt(0) & 0xFF);
-    
-    // Build key bytes from sifted key bits
-    const keyBytes = [];
-    for (let i = 0; i + 7 < keyBits.length; i += 8) {
-        keyBytes.push(parseInt(keyBits.slice(i, i + 8).join(""), 2));
-    }
-    
-    // If not enough key bytes, stop
-    if (keyBytes.length < msgBytes.length) {
-        return "(Error: Sifted key too short to encrypt message!)";
-    }
-    
-    // XOR message bytes with key bytes
-    const encryptedBytes = msgBytes.map((b, i) => b ^ keyBytes[i]);
-    
-    // Convert to Base64 so it’s ASCII-printable
-    let latin1 = "";
-    for (const b of encryptedBytes) latin1 += String.fromCharCode(b);
-    return btoa(latin1);
+// Convert message to bytes (ASCII/UTF‑8)
+const msgBytes = new TextEncoder().encode(msg);
+
+vbnet
+Copy code
+// Build key bytes from sifted key bits
+const keyBytes = [];
+for (let i = 0; i + 7 < keyBits.length; i += 8) {
+    keyBytes.push(parseInt(keyBits.slice(i, i + 8).join(""), 2));
+}
+
+// If not enough key bytes, stop
+if (keyBytes.length < msgBytes.length) {
+    return "(Error: Sifted key too short to encrypt message!)";
+}
+
+// XOR message bytes with key bytes
+const encryptedBytes = msgBytes.map((b, i) => b ^ keyBytes[i]);
+
+// Return ASCII‑only hex string
+return Array.from(encryptedBytes)
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 // Truncate each long sequence for display only
@@ -93,9 +95,9 @@ function runQKD() {
     
       <p><b>Sifted key (8-bit groups):</b><br>
          <span class="code">${groupedKey}</span></p>
-    
-      <p><b>Encrypted message (Base64):</b><br>
-         <span class="code">${encrypted}</span></p>
+
+        <p><b>Encrypted message (hex):</b><br>
+            <span class="code">${encrypted}</span></p>
 
 `;
 
