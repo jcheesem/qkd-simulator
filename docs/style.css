@@ -80,7 +80,6 @@ input:focus, textarea:focus {
 }
 
 textarea {
-  font-family: 'Open Sans', sans-serif;
   resize: vertical;
 }
 
