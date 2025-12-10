@@ -33,7 +33,7 @@ function bitsToBytes(bits) {
         let v = 0;
         for (let j = 0; j < 8; j++) {
             v = (v << 1) | bits[i + j];
-        }
+            }
         bytes.push(v);
     }
     return bytes;
@@ -53,7 +53,7 @@ function groupBits8(bits) {
 // Group any bit array but drop leftover bits that aren't a full byte
 function groupBitsFullBytes(bits) {
     const s = bits.map(b => (b ? "1" : "0")).join("");
-    const fullLen = (s.length >> 3) << 3;
+    const fullLen = (s.length >> 3) << 3; // floor to multiple of 8
     return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
 }
 
@@ -65,89 +65,89 @@ function truncate(str, max = 80) {
 // ------------------- Main BB84 Simulation -------------------
 
 function runQKD() {
-    const messageInput = document.getElementById("message");
-    const message = messageInput.value.trim();
-    const outEl = document.getElementById("output");
-    
-    if (message.length === 0) {
-        outEl.innerHTML = "<p>Please enter a message.</p>";
-        return;
-    }
-    
-    // Convert message to bytes and bits (UTF-8)
-    const msgBytes = new TextEncoder().encode(message);
-    const msgBits = bytesToBits(msgBytes);
-    const neededKeyBits = msgBits.length; // must match plaintext bit length
-    
-    // Generate raw BB84 size so sifted key is long enough
-    const MULTIPLIER = 8; // realistic: 8–16
-    const n = neededKeyBits * MULTIPLIER;
-    
-    // Simulate
-    const bitsA  = randomBits(n);
-    const basesA = randomBases(n);
-    const basesB = randomBases(n);
-    
-    const siftedKey = siftBits(bitsA, basesA, basesB);
-    
-    if (siftedKey.length < neededKeyBits) {
-        outEl.innerHTML =
-        '<p><b>Error:</b> Sifted key too short to encrypt message.</p>' +
-        '<p>Needed ' + neededKeyBits + ' bits, but only got ' + siftedKey.length + ' bits after sifting. ' +
-        'Try a shorter message or increase the multiplier.</p>';
-        return;
+const messageInput = document.getElementById("message");
+const message = (messageInput?.value || "").trim();
+const outEl = document.getElementById("output");
+
+if (!message) {
+    outEl.innerHTML = "<p>Please enter a message.</p>";
+    return;
 }
-    
-    // Use exactly the first neededKeyBits for OTP
-    const keyBitsUsed = siftedKey.slice(0, neededKeyBits);
-    
-    // Encrypt: ciphertext = plaintext XOR key (bitwise)
-    const ctBits = xorBits(msgBits, keyBitsUsed);
-    
-    // Decrypt (demonstration): plaintext = ciphertext XOR key
-    const ptBitsRecovered = xorBits(ctBits, keyBitsUsed);
-    const ptBytesRecovered = bitsToBytes(ptBitsRecovered);
-    const decodedMessage = new TextDecoder().decode(Uint8Array.from(ptBytesRecovered));
-    
-    // Prepare display
-    const groupedKeyAll  = groupBitsFullBytes(siftedKey);
-    const groupedKeyUsed = groupBits8(keyBitsUsed);
-    const groupedCt      = groupBits8(ctBits);
-    const groupedPt      = groupBits8(msgBits);
-    
-    const rawCount = n;
-    const siftedCount = siftedKey.length;
-    const keyBytesUsable = Math.floor(siftedCount / 8);
-    const ptByteLen = msgBytes.length;
-    
-    outEl.innerHTML = `
-    <p><b>Raw bits generated:</b> ${rawCount}</p>
-    <p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
-    
-    <p><b>Alice bits:</b><br>
-       <span class="code">${truncate(bitsA.join(""))}</span></p>
-    
-    <p><b>Alice bases:</b><br>
-       <span class="code">${truncate(basesA.join(""))}</span></p>
-    
-    <p><b>Bob bases:</b><br>
-       <span class="code">${truncate(basesB.join(""))}</span></p>
-    
-    <p><b>Sifted key (8-bit groups, full bytes only):</b><br>
-       <span class="code">${groupedKeyAll}</span></p>
-    
-    <p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
-       <span class="code">${groupedKeyUsed}</span></p>
-    
-    <p><b>Plaintext (bits):</b><br>
-       <span class="code">${groupedPt}</span></p>
-    
-    <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
-       <span class="code">${groupedCt}</span></p>
-    
-    <p><b>Decoded message (ciphertext XOR key):</b><br>
-       <span class="code">${decodedMessage}</span></p>
+
+// Convert message to bytes and bits (UTF-8)
+const msgBytes = new TextEncoder().encode(message);
+const msgBits = bytesToBits(msgBytes);
+const neededKeyBits = msgBits.length; // must match plaintext bit length
+
+// Generate raw BB84 size so sifted key is long enough
+const MULTIPLIER = 8; // realistic: 8–16
+const n = neededKeyBits * MULTIPLIER;
+
+// Simulate
+const bitsA  = randomBits(n);
+const basesA = randomBases(n);
+const basesB = randomBases(n);
+
+const siftedKey = siftBits(bitsA, basesA, basesB);
+
+if (siftedKey.length < neededKeyBits) {
+outEl.innerHTML =  `      
+    <p><b>Error:</b> Sifted key too short to encrypt message.</p>
+    <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting. Try a shorter message or increase the multiplier.</p>
     `;
+    return;
+}
+
+// Use exactly the first neededKeyBits for OTP
+const keyBitsUsed = siftedKey.slice(0, neededKeyBits);
+
+// Encrypt: ciphertext = plaintext XOR key (bitwise)
+const ctBits = xorBits(msgBits, keyBitsUsed);
+
+// Decrypt (demonstration): plaintext = ciphertext XOR key
+const ptBitsRecovered = xorBits(ctBits, keyBitsUsed);
+const ptBytesRecovered = bitsToBytes(ptBitsRecovered);
+const decodedMessage = new TextDecoder().decode(Uint8Array.from(ptBytesRecovered));
+
+// Prepare display
+const groupedKeyAll  = groupBitsFullBytes(siftedKey);
+const groupedKeyUsed = groupBits8(keyBitsUsed);
+const groupedPt      = groupBits8(msgBits);
+const groupedCt      = groupBits8(ctBits);
+
+const rawCount = n;
+const siftedCount = siftedKey.length;
+const keyBytesUsable = Math.floor(siftedCount / 8);
+const ptByteLen = msgBytes.length;
+
+outEl.innerHTML = `
+<p><b>Raw bits generated:</b> ${rawCount}</p>
+<p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
+
+<p><b>Alice bits:</b><br>
+   <span class="code">${truncate(bitsA.join(""))}</span></p>
+
+<p><b>Alice bases:</b><br>
+   <span class="code">${truncate(basesA.join(""))}</span></p>
+
+<p><b>Bob bases:</b><br>
+   <span class="code">${truncate(basesB.join(""))}</span></p>
+
+<p><b>Sifted key (8-bit groups, full bytes only):</b><br>
+   <span class="code">${groupedKeyAll}</span></p>
+
+<p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
+   <span class="code">${groupedKeyUsed}</span></p>
+
+<p><b>Plaintext (bits):</b><br>
+   <span class="code">${groupedPt}</span></p>
+
+<p><b>Ciphertext (bits = plaintext XOR key):</b><br>
+   <span class="code">${groupedCt}</span></p>
+
+<p><b>Decoded message (ciphertext XOR key):</b><br>
+   <span class="code">${decodedMessage}</span></p>
+`;
 }
 
 // ------------------- Enter-to-run -------------------
