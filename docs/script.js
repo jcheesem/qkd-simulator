@@ -117,6 +117,48 @@ function siftBits(bitsA, basesA, basesB) {
 }
 
 /**
+ * Creates a truncated display with "Show All" button for long content.
+ * @param {string} content - Full content to display
+ * @param {string} id - Unique ID for this display
+ * @param {number} maxLines - Maximum lines to show when collapsed (1 or 5-6)
+ * @returns {string} HTML string with truncated display
+ */
+function createTruncatedDisplay(content, id, maxLines = 1) {
+  const lineHeight = 20; // approximate pixels per line
+  const maxHeight = maxLines * lineHeight;
+  
+  return `
+    <div class="code-container">
+      <div id="$${id}" class="code-scrollable collapsed" style="max-height: $${maxHeight}px;">
+        ${content}
+      </div>
+      <button class="show-all-btn" id="btn-$${id}" onclick="toggleShowAll('$${id}', 'btn-${id}')">Show All</button>
+    </div>
+  `;
+}
+
+/**
+ * Toggles visibility of collapsible content sections.
+ * @param {string} contentId - ID of content div to toggle
+ * @param {string} buttonId - ID of toggle button
+ */
+function toggleShowAll(contentId, buttonId) {
+  const content = document.getElementById(contentId);
+  const button = document.getElementById(buttonId);
+  
+  if (content.classList.contains('collapsed')) {
+    content.classList.remove('collapsed');
+    content.style.maxHeight = 'none';
+    button.textContent = 'Show Less';
+  } else {
+    content.classList.add('collapsed');
+    const isOneLine = contentId.includes('alice') || contentId.includes('bob');
+    content.style.maxHeight = isOneLine ? '20px' : '120px';
+    button.textContent = 'Show All';
+  }
+}
+
+/**
  * Copies text to clipboard and shows temporary "Copied!" feedback.
  * @param {string} text - Text to copy
  * @param {string} buttonId - ID of button to show feedback on
@@ -132,24 +174,6 @@ function copyToClipboard(text, buttonId) {
   }).catch(err => {
     console.error('Failed to copy:', err);
   });
-}
-
-/**
- * Toggles visibility of collapsible content sections.
- * @param {string} contentId - ID of content div to toggle
- * @param {string} buttonId - ID of toggle button
- */
-function toggleShowAll(contentId, buttonId) {
-  const content = document.getElementById(contentId);
-  const button = document.getElementById(buttonId);
-  
-  if (content.classList.contains('collapsed')) {
-    content.classList.remove('collapsed');
-    button.textContent = 'Show Less';
-  } else {
-    content.classList.add('collapsed');
-    button.textContent = 'Show All';
-  }
 }
 
 /**
@@ -219,11 +243,19 @@ function runQKD() {
   const keyBytesUsable = Math.floor(siftedCount / 8);
   const ptByteLen = msgBytes.length;
 
-  // Check if we need collapsible sections (more than 200 bits ~ 25 bytes)
-  const needsCollapse = neededKeyBits > 200;
-  const collapsedClass = needsCollapse ? 'class="code-scrollable collapsed"' : 'class="code-scrollable"';
-
   outEl.innerHTML = `
+    <div class="output-section key-cipher-section">
+      <p><b>Your Secret Key (send this!):</b><br>
+         <span class="subtitle-text">Copy and share with recipient</span></p>
+      ${createTruncatedDisplay(groupedKeyUsed, 'key-display', 6)}
+      <button class="copy-btn" id="copy-key-btn" onclick="copyToClipboard('${groupedKeyUsed.replace(/'/g, "\\'")}', 'copy-key-btn')">Copy Key</button>
+
+      <p><b>Your Ciphertext (send this!):</b><br>
+         <span class="subtitle-text">Encrypted message to share</span></p>
+      ${createTruncatedDisplay(groupedCt, 'cipher-display', 6)}
+      <button class="copy-btn" id="copy-cipher-btn" onclick="copyToClipboard('${groupedCt.replace(/'/g, "\\'")}', 'copy-cipher-btn')">Copy Ciphertext</button>
+    </div>
+
     <div class="output-section">
       <p><b>Message Statistics:</b></p>
       <p class="small-text">
@@ -234,48 +266,23 @@ function runQKD() {
       </p>
     </div>
 
-    <div class="output-section key-cipher-section">
-      <p><b>Your Secret Key (send this!):</b> 
-        <span class="subtitle-text">Copy and share securely with recipient</span>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleKey" onclick="toggleShowAll(\'keyContent\', \'btnToggleKey\')">Show All</button>' : ''}
-      </p>
-      <div id="keyContent" $${collapsedClass}><code class="code">$${groupedKeyUsed}</code></div>
-      <button class="copy-btn" id="copyKeyBtn" onclick="copyToClipboard('${groupedKeyUsed}', 'copyKeyBtn')">Copy Key</button>
-      <p><b>Your Ciphertext (send this!):</b>
-        <span class="subtitle-text">Encrypted message to share</span>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleCipher" onclick="toggleShowAll(\'cipherContent\', \'btnToggleCipher\')">Show All</button>' : ''}
-      </p>
-      <div id="cipherContent" ${collapsedClass}><code class="code">${groupedCt}</code></div>
-      <button class="copy-btn" id="copyCipherBtn" onclick="copyToClipboard('${groupedCt}', 'copyCipherBtn')">Copy Ciphertext</button>
-    </div>
-
     <div class="output-section">
       <p><b>BB84 Protocol Details:</b></p>
       
-      <p class="small-text"><b>Alice's bits:</b>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleAlice" onclick="toggleShowAll(\'aliceContent\', \'btnToggleAlice\')">Show All</button>' : ''}
-      </p>
-      <div id="aliceContent" ${collapsedClass}><code class="code">${bitsAStr}</code></div>
+      <p class="small-text"><b>Alice's bits:</b></p>
+      ${createTruncatedDisplay(bitsAStr, 'alice-bits', 1)}
 
-      <p class="small-text"><b>Alice's bases:</b>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleAliceBases" onclick="toggleShowAll(\'aliceBasesContent\', \'btnToggleAliceBases\')">Show All</button>' : ''}
-      </p>
-      <div id="aliceBasesContent" ${collapsedClass}><code class="code">${basesAStr}</code></div>
+      <p class="small-text"><b>Alice's bases:</b></p>
+      ${createTruncatedDisplay(basesAStr, 'alice-bases', 1)}
 
-      <p class="small-text"><b>Bob's bases:</b>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleBobBases" onclick="toggleShowAll(\'bobBasesContent\', \'btnToggleBobBases\')">Show All</button>' : ''}
-      </p>
-      <div id="bobBasesContent" ${collapsedClass}><code class="code">${basesBStr}</code></div>
+      <p class="small-text"><b>Bob's bases:</b></p>
+      ${createTruncatedDisplay(basesBStr, 'bob-bases', 1)}
 
-      <p class="small-text"><b>Full sifted key (all ${siftedCount} bits):</b>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleSifted" onclick="toggleShowAll(\'siftedContent\', \'btnToggleSifted\')">Show All</button>' : ''}
-      </p>
-      <div id="siftedContent" ${collapsedClass}><code class="code">${groupedKeyAll}</code></div>
+      <p class="small-text"><b>Full sifted key (all ${siftedCount} bits):</b></p>
+      ${createTruncatedDisplay(groupedKeyAll, 'sifted-display', 6)}
 
-      <p class="small-text"><b>Your plaintext (bits):</b>
-        ${needsCollapse ? '<button class="show-all-btn" id="btnTogglePlain" onclick="toggleShowAll(\'plainContent\', \'btnTogglePlain\')">Show All</button>' : ''}
-      </p>
-      <div id="plainContent" ${collapsedClass}><code class="code">${groupedPt}</code></div>
+      <p class="small-text"><b>Your plaintext (bits):</b></p>
+      ${createTruncatedDisplay(groupedPt, 'plaintext-display', 6)}
     </div>
   `;
 }
@@ -330,7 +337,7 @@ function decryptMessage() {
     outEl.innerHTML = `
       <div class="output-section">
         <p><b>Error:</b> Key and ciphertext lengths don't match.</p>
-        <p>Key: ${keyBits.length} bits | Ciphertext: ${ctBits.length} bits</p>
+        <p>Key: $${keyBits.length} bits | Ciphertext: $${ctBits.length} bits</p>
       </div>
     `;
     return;
@@ -363,7 +370,7 @@ function decryptMessage() {
       <p><b>Decrypted Message:</b></p>
       <div class="decrypted-message">${decodedMessage}</div>
     </div>
-  `;
+    `;
 }
 
 /**
