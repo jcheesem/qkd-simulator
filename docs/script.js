@@ -57,17 +57,22 @@ function groupBitsFullBytes(bits) {
   return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
 }
 
-// Create truncated display with "Show All" button
+// Create truncated display with "Show All" button - prevents ellipsis wrapping
 function createTruncatedDisplay(str, id, max = 80) {
   if (str.length <= max) {
     return `<span class="code">${str}</span>`;
   }
   
-  const truncated = str.slice(0, max) + "...";
+  // Truncate at max-3 to ensure "..." doesn't wrap
+  const truncated = str.slice(0, max - 3) + "...";
   return `
-    <span class="code" id="${id}-display">${truncated}</span>
-    <button class="show-all-btn" onclick="toggleShowAll('${id}')">Show All</button>
-    <span class="code" id="${id}-full" style="display:none;">${str}</span>
+    <div class="code-container">
+      <span class="code" id="${id}-display" style="display:inline-block;">${truncated}</span>
+      <button class="show-all-btn" onclick="toggleShowAll('${id}')">Show All</button>
+      <div class="code-scrollable" id="${id}-full" style="display:none;">
+        <span style="font-family: 'Courier New', monospace; word-break: break-all;">${str}</span>
+      </div>
+    </div>
   `;
 }
 
@@ -75,19 +80,16 @@ function createTruncatedDisplay(str, id, max = 80) {
 function toggleShowAll(id) {
   const displayEl = document.getElementById(`${id}-display`);
   const fullEl = document.getElementById(`${id}-full`);
-  const btnId = `btn-${id}`;
-  
-  // Find the button by looking for it in the parent
-  const btn = displayEl.parentElement.querySelector('.show-all-btn');
+  const btn = event.target;
   
   if (fullEl.style.display === "none") {
     displayEl.style.display = "none";
-    fullEl.style.display = "inline";
-    if (btn) btn.textContent = "Show Less";
+    fullEl.style.display = "block";
+    btn.textContent = "Show Less";
   } else {
-    displayEl.style.display = "inline";
+    displayEl.style.display = "inline-block";
     fullEl.style.display = "none";
-    if (btn) btn.textContent = "Show All";
+    btn.textContent = "Show All";
   }
 }
 
@@ -115,7 +117,7 @@ function runQKD() {
   const message = messageInput.value.trim();
 
   if (!message) {
-    outEl.innerHTML = "<p>Please enter a message.</p>";
+    outEl.innerHTML = "";  // Clear output instead of showing empty box
     return;
   }
 
@@ -137,9 +139,11 @@ function runQKD() {
 
   if (siftedKey.length < neededKeyBits) {
     outEl.innerHTML = `
-      <p><b>Error:</b> Sifted key too short to encrypt message.</p>
-      <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting.
-      Try a shorter message or increase the multiplier.</p>
+      <div class="output-section">
+        <p><b>Error:</b> Sifted key too short to encrypt message.</p>
+        <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting.
+        Try a shorter message or increase the multiplier.</p>
+      </div>
     `;
     return;
   }
@@ -165,29 +169,31 @@ function runQKD() {
   const ptByteLen = msgBytes.length;
 
   outEl.innerHTML = `
-    <p><b>Raw bits generated:</b> ${rawCount}</p>
-    <p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
+    <div class="output-section">
+      <p><b>Raw bits generated:</b> ${rawCount}</p>
+      <p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
 
-    <p><b>Alice bits:</b><br>
-       ${createTruncatedDisplay(bitsAStr, 'alice-bits')}</p>
+      <p><b>Alice bits:</b><br>
+         ${createTruncatedDisplay(bitsAStr, 'alice-bits')}</p>
 
-    <p><b>Alice bases:</b><br>
-       ${createTruncatedDisplay(basesAStr, 'alice-bases')}</p>
+      <p><b>Alice bases:</b><br>
+         ${createTruncatedDisplay(basesAStr, 'alice-bases')}</p>
 
-    <p><b>Bob bases:</b><br>
-       ${createTruncatedDisplay(basesBStr, 'bob-bases')}</p>
+      <p><b>Bob bases:</b><br>
+         ${createTruncatedDisplay(basesBStr, 'bob-bases')}</p>
 
-    <p><b>Sifted key (8-bit groups, full bytes only):</b><br>
-       <span class="code">${groupedKeyAll}</span></p>
+      <p><b>Sifted key (8-bit groups, full bytes only):</b><br>
+         <span class="code">${groupedKeyAll}</span></p>
 
-    <p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
-       <span class="code">${groupedKeyUsed}</span></p>
+      <p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
+         <span class="code">${groupedKeyUsed}</span></p>
 
-    <p><b>Plaintext (bits):</b><br>
-       <span class="code">${groupedPt}</span></p>
+      <p><b>Plaintext (bits):</b><br>
+         <span class="code">${groupedPt}</span></p>
 
-    <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
-       <span class="code">${groupedCt}</span></p>
+      <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
+         <span class="code">${groupedCt}</span></p>
+    </div>
   `;
 }
 
@@ -208,17 +214,25 @@ function decryptMessage() {
 
   // Validate inputs
   if (!ctStr || !keyStr) {
-    outEl.innerHTML = "<p>Please enter both ciphertext and key.</p>";
+    outEl.innerHTML = "";  // Clear output instead of showing message
     return;
   }
 
   if (!validateBinaryInput(ctStr)) {
-    outEl.innerHTML = "<p><b>Error:</b> Ciphertext must contain only 0s, 1s, and spaces.</p>";
+    outEl.innerHTML = `
+      <div class="output-section">
+        <p><b>Error:</b> Ciphertext must contain only 0s, 1s, and spaces.</p>
+      </div>
+    `;
     return;
   }
 
   if (!validateBinaryInput(keyStr)) {
-    outEl.innerHTML = "<p><b>Error:</b> Key must contain only 0s, 1s, and spaces.</p>";
+    outEl.innerHTML = `
+      <div class="output-section">
+        <p><b>Error:</b> Key must contain only 0s, 1s, and spaces.</p>
+      </div>
+    `;
     return;
   }
 
@@ -229,8 +243,10 @@ function decryptMessage() {
   // Check lengths match
   if (ctBits.length !== keyBits.length) {
     outEl.innerHTML = `
-      <p><b>Error:</b> Ciphertext and key must have the same length.</p>
-      <p>Ciphertext: ${ctBits.length} bits, Key: ${keyBits.length} bits</p>
+      <div class="output-section">
+        <p><b>Error:</b> Ciphertext and key must have the same length.</p>
+        <p>Ciphertext: ${ctBits.length} bits, Key: ${keyBits.length} bits</p>
+      </div>
     `;
     return;
   }
@@ -238,8 +254,10 @@ function decryptMessage() {
   // Check length is a multiple of 8
   if (ctBits.length % 8 !== 0) {
     outEl.innerHTML = `
-      <p><b>Error:</b> Bit length must be a multiple of 8.</p>
-      <p>Current length: ${ctBits.length} bits</p>
+      <div class="output-section">
+        <p><b>Error:</b> Bit length must be a multiple of 8.</p>
+        <p>Current length: ${ctBits.length} bits</p>
+      </div>
     `;
     return;
   }
@@ -256,8 +274,10 @@ function decryptMessage() {
   }
 
   outEl.innerHTML = `
-    <p><b>Decrypted message:</b></p>
-    <p class="code">${decodedMessage}</p>
+    <div class="output-section">
+      <p><b>Decrypted message:</b></p>
+      <p class="code">${decodedMessage}</p>
+    </div>
   `;
 }
 
@@ -273,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Allow Enter in decrypt textareas to trigger decrypt
+  // Allow Ctrl+Enter in decrypt textareas to trigger decrypt
   const ctInput = document.getElementById("ciphertext");
   const keyInput = document.getElementById("keyInput");
   
