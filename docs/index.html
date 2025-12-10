@@ -1,17 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>BB84 QKD Message Encoder</title>
+
+  <!-- Google Font: Open Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-<h1>Quantum Key Distribution Simulator (BB84)</h1>
 
-<input id="message" placeholder="Enter short message">
-<button onclick="runQKD()">Generate QKD Key + Encrypt</button>
+<div class="container">
+  <h1>BB84 Quantum Key Distribution Simulator</h1>
 
-<div id="output"></div>
+  <div class="input-section">
+    <input id="message" placeholder="Enter a short message">
+    <button onclick="runQKD()">Generate Key + Encrypt</button>
+  </div>
+
+  <div id="output" class="output-section"></div>
+</div>
 
 <script src="script.js"></script>
 </body>
