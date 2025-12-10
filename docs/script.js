@@ -46,8 +46,9 @@ function runQKD() {
         return;
     }
 
-    // Number of bits = 8 per character
-    let n = message.length * 8;
+    // Increase initial BB84 size so sifted key is long enough
+    const MULTIPLIER = 8;      // realistic: 8–16
+    let n = message.length * 8 * MULTIPLIER;
 
     let bitsA  = randomBits(n);
     let basesA = randomBases(n);
