@@ -24,38 +24,31 @@ function groupBits(bits) {
 // XOR–encrypt a string using repeating bits from the key
 function encodeMessage(msg, keyBits) {
     // Convert message into binary (8 bits per character)
-    let msgBits = msg.split("").map(ch => {
-        return ch.charCodeAt(0).toString(2).padStart(8, "0");
-    });
+    const msgBits = msg.split("").map(ch => ch.charCodeAt(0).toString(2).padStart(8, "0"));
 
     // Group siftedKey into bytes
-    let keyBytes = [];
+    const keyBytes = [];
     for (let i = 0; i + 7 < keyBits.length; i += 8) {
         keyBytes.push(keyBits.slice(i, i + 8).join(""));
     }
-
+    
     // If not enough key bytes, stop
     if (keyBytes.length < msgBits.length) {
         return "(Error: Sifted key too short to encrypt message!)";
     }
-
-    // XOR msg bytes with key bytes
-    let encryptedBits = msgBits.map((byte, i) => {
-        let keyByte = keyBytes[i];
-        let xor = "";
-        for (let j = 0; j < 8; j++) {
-            xor += (byte[j] ^ keyByte[j]);
-        }
-        return xor;
+    
+    // XOR msg bytes with key bytes → numeric byte array
+    const encryptedBytes = msgBits.map((msgByte, i) => {
+        const m = parseInt(msgByte, 2);
+        const k = parseInt(keyBytes[i], 2);
+        return m ^ k;
     });
 
-    // Convert encrypted bits → text
-    let encryptedChars = encryptedBits.map(b => 
-        String.fromCharCode(parseInt(b, 2))
-    );
-
-    return encryptedChars.join("");
+    // Convert to Base64 so it’s ASCII-printable
+    const latin1 = String.fromCharCode(...encryptedBytes);
+    return btoa(latin1);
 }
+
 // Truncate each long sequence for display only
 function truncate(str, max = 80) {
     return str.length > max ? str.slice(0, max) + "..." : str;
