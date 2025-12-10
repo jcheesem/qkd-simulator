@@ -1,117 +1,126 @@
-// ------------------- Helper Functions -------------------
-
-function randomBits(n) {
-  const arr = [];
-  for (let i = 0; i < n; i++) {
-    arr.push(Math.random() < 0.5 ? 0 : 1);
-  }
-  return arr;
-}
-
-function randomBases(n) {
-  const arr = [];
-  for (let i = 0; i < n; i++) {
-    arr.push(Math.random() < 0.5 ? '+' : 'x');
-  }
-  return arr;
-}
-
-function siftBits(bitsA, basesA, basesB) {
-  const sifted = [];
-  for (let i = 0; i < bitsA.length; i++) {
-    if (basesA[i] === basesB[i]) {
-      sifted.push(bitsA[i]);
-    }
-  }
-  return sifted;
-}
-
+/**
+ * Converts an array of bytes (0-255) into an array of bits (0s and 1s).
+ * Each byte becomes 8 bits, MSB first.
+ * @param {Array<number>} bytes - Array of byte values
+ * @returns {Array<number>} Array of bits (0 or 1)
+ */
 function bytesToBits(bytes) {
   const bits = [];
-  for (const byte of bytes) {
+  for (const b of bytes) {
     for (let i = 7; i >= 0; i--) {
-      bits.push((byte >> i) & 1);
+      bits.push((b >> i) & 1);
     }
   }
   return bits;
 }
 
+/**
+ * Converts an array of bits into an array of bytes.
+ * Groups bits in chunks of 8, MSB first.
+ * @param {Array<number>} bits - Array of bits (0 or 1)
+ * @returns {Array<number>} Array of byte values (0-255)
+ */
 function bitsToBytes(bits) {
   const bytes = [];
   for (let i = 0; i < bits.length; i += 8) {
     let byte = 0;
     for (let j = 0; j < 8; j++) {
-      byte = (byte << 1) | bits[i + j];
+      byte = (byte << 1) | (bits[i + j] || 0);
     }
     bytes.push(byte);
   }
   return bytes;
 }
 
-function xorBits(a, b) {
-  const result = [];
-  for (let i = 0; i < a.length; i++) {
-    result.push(a[i] ^ b[i]);
-  }
-  return result;
+/**
+ * Performs bitwise XOR on two bit arrays.
+ * @param {Array<number>} bits1 - First bit array
+ * @param {Array<number>} bits2 - Second bit array
+ * @returns {Array<number>} XOR result
+ */
+function xorBits(bits1, bits2) {
+  return bits1.map((b, i) => b ^ bits2[i]);
 }
 
+/**
+ * Formats bit array into groups of 8 with spaces for readability.
+ * @param {Array<number>} bits - Array of bits
+ * @returns {string} Formatted bit string
+ */
 function groupBits8(bits) {
   let str = "";
   for (let i = 0; i < bits.length; i++) {
-    if (i > 0 && i % 8 === 0) str += " ";
     str += bits[i];
+    if ((i + 1) % 8 === 0) str += " ";
   }
-  return str;
+  return str.trim();
 }
 
+/**
+ * Groups bits into complete bytes only (discards incomplete final byte).
+ * @param {Array<number>} bits - Array of bits
+ * @returns {string} Formatted bit string with complete bytes only
+ */
 function groupBitsFullBytes(bits) {
-  const fullByteCount = Math.floor(bits.length / 8);
-  const usableBits = bits.slice(0, fullByteCount * 8);
-  return groupBits8(usableBits);
+  const completeByteCount = Math.floor(bits.length / 8);
+  const completeBits = bits.slice(0, completeByteCount * 8);
+  return groupBits8(completeBits);
 }
 
-// Validate binary input (only 0, 1, and spaces)
+/**
+ * Validates that a string contains only binary digits and spaces.
+ * @param {string} str - Input string to validate
+ * @returns {boolean} True if valid binary input
+ */
 function validateBinaryInput(str) {
-  return /^[01\s]*$/.test(str);
+  return /^[01\s]+$/.test(str);
 }
 
-// Parse binary string to bit array (ignoring spaces)
+/**
+ * Parses a binary string (with spaces) into an array of bit values.
+ * @param {string} str - Binary string (e.g., "01001 10101")
+ * @returns {Array<number>} Array of bits (0 or 1)
+ */
 function parseBinaryString(str) {
-  return str.replace(/\s/g, "").split("").map(ch => parseInt(ch, 10));
+  return str.replace(/\s/g, "").split("").map(c => parseInt(c, 10));
 }
 
-// Create truncated display with "Show All" button
-function createTruncatedDisplay(str, id) {
-  const MAX_CHARS = 100;
-  if (str.length <= MAX_CHARS) {
-    return `<span class="code">${str}</span>`;
-  }
-  
-  const truncated = str.substring(0, MAX_CHARS);
-  return `
-    <div class="code-container">
-      <span class="code" id="${id}-display">${truncated}...</span>
-      <button class="show-all-btn" onclick="toggleFullDisplay('${id}', '${str}')">Show All</button>
-    </div>
-  `;
+/**
+ * Generates random bits using cryptographically secure randomness.
+ * @param {number} len - Number of bits to generate
+ * @returns {Array<number>} Array of random bits (0 or 1)
+ */
+function randomBits(len) {
+  return [...crypto.getRandomValues(new Uint8Array(len))].map(b => b % 2);
 }
 
-function toggleFullDisplay(id, fullStr) {
-  const displayEl = document.getElementById(`${id}-display`);
-  const btnEl = event.target;
-  
-  if (btnEl.textContent === "Show All") {
-    displayEl.innerHTML = `<div class="code-scrollable">${fullStr}</div>`;
-    btnEl.textContent = "Show Less";
-  } else {
-    const truncated = fullStr.substring(0, 100);
-    displayEl.textContent = truncated + "...";
-    btnEl.textContent = "Show All";
-  }
+/**
+ * Generates random measurement bases for BB84 protocol.
+ * Returns "+" for rectilinear or "×" for diagonal basis.
+ * @param {number} len - Number of bases to generate
+ * @returns {Array<string>} Array of basis symbols ("+" or "×")
+ */
+function randomBases(len) {
+  return randomBits(len).map(x => x ? "+" : "×");
 }
 
-// Copy to clipboard function
+/**
+ * Sifts bits by keeping only those where Alice and Bob used matching bases.
+ * This is the key reconciliation step in BB84 protocol.
+ * @param {Array<number>} bitsA - Alice's bits
+ * @param {Array<string>} basesA - Alice's measurement bases
+ * @param {Array<string>} basesB - Bob's measurement bases
+ * @returns {Array<number>} Sifted key (matching bases only)
+ */
+function siftBits(bitsA, basesA, basesB) {
+  return bitsA.filter((_, i) => basesA[i] === basesB[i]);
+}
+
+/**
+ * Copies text to clipboard and shows temporary "Copied!" feedback.
+ * @param {string} text - Text to copy
+ * @param {string} buttonId - ID of button to show feedback on
+ */
 function copyToClipboard(text, buttonId) {
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById(buttonId);
@@ -125,8 +134,28 @@ function copyToClipboard(text, buttonId) {
   });
 }
 
-// ------------------- Encryption (Left Panel) -------------------
+/**
+ * Toggles visibility of collapsible content sections.
+ * @param {string} contentId - ID of content div to toggle
+ * @param {string} buttonId - ID of toggle button
+ */
+function toggleShowAll(contentId, buttonId) {
+  const content = document.getElementById(contentId);
+  const button = document.getElementById(buttonId);
+  
+  if (content.classList.contains('collapsed')) {
+    content.classList.remove('collapsed');
+    button.textContent = 'Show Less';
+  } else {
+    content.classList.add('collapsed');
+    button.textContent = 'Show All';
+  }
+}
 
+/**
+ * Main encryption function - runs BB84 protocol and encrypts user message.
+ * Generates random bits/bases, performs key sifting, and encrypts with XOR.
+ */
 function runQKD() {
   const messageInput = document.getElementById("message");
   const outEl = document.getElementById("output");
@@ -136,10 +165,10 @@ function runQKD() {
     return;
   }
 
-  const message = messageInput.value.trim();
+  const message = messageInput.value;
 
   if (!message) {
-    outEl.innerHTML = "";  // Clear output instead of showing empty box
+    outEl.innerHTML = "";
     return;
   }
 
@@ -163,7 +192,7 @@ function runQKD() {
     outEl.innerHTML = `
       <div class="output-section">
         <p><b>Error:</b> Sifted key too short to encrypt message.</p>
-        <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting.
+        <p>Needed $${neededKeyBits} bits, but only got $${siftedKey.length} bits after sifting.
         Try a shorter message or increase the multiplier.</p>
       </div>
     `;
@@ -190,92 +219,118 @@ function runQKD() {
   const keyBytesUsable = Math.floor(siftedCount / 8);
   const ptByteLen = msgBytes.length;
 
-  outEl.innerHTML = `
-    <div class="output-section key-cipher-section">
-      <p><b>Key used</b><br>
-         <span class="subtitle-text">first ${ptByteLen} bytes = ${neededKeyBits} bits</span></p>
-      <span class="code">${groupedKeyUsed}</span>
-      <button class="copy-btn" id="copy-key-btn" onclick="copyToClipboard('${groupedKeyUsed}', 'copy-key-btn')">Copy Key</button>
+  // Check if we need collapsible sections (more than 200 bits ~ 25 bytes)
+  const needsCollapse = neededKeyBits > 200;
+  const collapsedClass = needsCollapse ? 'class="code-scrollable collapsed"' : 'class="code-scrollable"';
 
-      <p><b>Ciphertext</b><br>
-         <span class="subtitle-text">bits = plaintext XOR key</span></p>
-      <span class="code">${groupedCt}</span>
-      <button class="copy-btn" id="copy-cipher-btn" onclick="copyToClipboard('${groupedCt}', 'copy-cipher-btn')">Copy Ciphertext</button>
+  outEl.innerHTML = `
+    <div class="output-section">
+      <p><b>Message Statistics:</b></p>
+      <p class="small-text">
+        • Your message: $${message.length} character(s), $${ptByteLen} byte(s), ${msgBits.length} bits<br>
+        • Raw bits sent: ${rawCount} bits<br>
+        • After sifting: $${siftedCount} bits (~$${((siftedCount/rawCount)*100).toFixed(1)}% kept)<br>
+        • Usable key: ${keyBytesUsable} complete byte(s)
+      </p>
+    </div>
+
+    <div class="output-section key-cipher-section">
+      <p><b>Your Secret Key (send this!):</b> 
+        <span class="subtitle-text">Copy and share securely with recipient</span>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleKey" onclick="toggleShowAll(\'keyContent\', \'btnToggleKey\')">Show All</button>' : ''}
+      </p>
+      <div id="keyContent" $${collapsedClass}><code class="code">$${groupedKeyUsed}</code></div>
+      <button class="copy-btn" id="copyKeyBtn" onclick="copyToClipboard('${groupedKeyUsed}', 'copyKeyBtn')">Copy Key</button>
+      <p><b>Your Ciphertext (send this!):</b>
+        <span class="subtitle-text">Encrypted message to share</span>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleCipher" onclick="toggleShowAll(\'cipherContent\', \'btnToggleCipher\')">Show All</button>' : ''}
+      </p>
+      <div id="cipherContent" ${collapsedClass}><code class="code">${groupedCt}</code></div>
+      <button class="copy-btn" id="copyCipherBtn" onclick="copyToClipboard('${groupedCt}', 'copyCipherBtn')">Copy Ciphertext</button>
     </div>
 
     <div class="output-section">
-      <p class="small-text"><b>Raw bits generated:</b> ${rawCount}</p>
-      <p class="small-text"><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
+      <p><b>BB84 Protocol Details:</b></p>
+      
+      <p class="small-text"><b>Alice's bits:</b>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleAlice" onclick="toggleShowAll(\'aliceContent\', \'btnToggleAlice\')">Show All</button>' : ''}
+      </p>
+      <div id="aliceContent" ${collapsedClass}><code class="code">${bitsAStr}</code></div>
 
-      <p><b>Alice bits:</b><br>
-         ${createTruncatedDisplay(bitsAStr, 'alice-bits')}</p>
+      <p class="small-text"><b>Alice's bases:</b>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleAliceBases" onclick="toggleShowAll(\'aliceBasesContent\', \'btnToggleAliceBases\')">Show All</button>' : ''}
+      </p>
+      <div id="aliceBasesContent" ${collapsedClass}><code class="code">${basesAStr}</code></div>
 
-      <p><b>Alice bases:</b><br>
-         ${createTruncatedDisplay(basesAStr, 'alice-bases')}</p>
+      <p class="small-text"><b>Bob's bases:</b>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleBobBases" onclick="toggleShowAll(\'bobBasesContent\', \'btnToggleBobBases\')">Show All</button>' : ''}
+      </p>
+      <div id="bobBasesContent" ${collapsedClass}><code class="code">${basesBStr}</code></div>
 
-      <p><b>Bob bases:</b><br>
-         ${createTruncatedDisplay(basesBStr, 'bob-bases')}</p>
+      <p class="small-text"><b>Full sifted key (all ${siftedCount} bits):</b>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnToggleSifted" onclick="toggleShowAll(\'siftedContent\', \'btnToggleSifted\')">Show All</button>' : ''}
+      </p>
+      <div id="siftedContent" ${collapsedClass}><code class="code">${groupedKeyAll}</code></div>
 
-      <p><b>Sifted key</b><br>
-         <span class="subtitle-text">8-bit groups, full bytes only</span></p>
-      <span class="code">${groupedKeyAll}</span>
-
-      <p><b>Plaintext</b><br>
-         <span class="subtitle-text">bits</span></p>
-      <span class="code">${groupedPt}</span>
+      <p class="small-text"><b>Your plaintext (bits):</b>
+        ${needsCollapse ? '<button class="show-all-btn" id="btnTogglePlain" onclick="toggleShowAll(\'plainContent\', \'btnTogglePlain\')">Show All</button>' : ''}
+      </p>
+      <div id="plainContent" ${collapsedClass}><code class="code">${groupedPt}</code></div>
     </div>
   `;
 }
 
-// ------------------- Decryption (Right Panel) -------------------
-
+/**
+ * Decrypts a ciphertext using the provided key (XOR decryption).
+ * Validates input and converts binary strings back to UTF-8 text.
+ */
 function decryptMessage() {
-  const ctInput = document.getElementById("ciphertext");
   const keyInput = document.getElementById("keyInput");
+  const cipherInput = document.getElementById("ciphertext");
   const outEl = document.getElementById("decryptOutput");
 
-  if (!ctInput || !keyInput || !outEl) {
-    console.error("Required decrypt elements not found");
+  if (!keyInput || !cipherInput || !outEl) {
+    console.error("Required elements not found");
     return;
   }
 
-  const ctStr = ctInput.value.trim();
   const keyStr = keyInput.value.trim();
+  const ctStr = cipherInput.value.trim();
+
+  if (!keyStr || !ctStr) {
+    outEl.innerHTML = "";
+    return;
+  }
 
   // Validate inputs
-  if (!ctStr || !keyStr) {
-    outEl.innerHTML = "";  // Clear output instead of showing message
+  if (!validateBinaryInput(keyStr)) {
+    outEl.innerHTML = `
+      <div class="output-section">
+        <p><b>Error:</b> Key contains invalid characters. Use only 0, 1, and spaces.</p>
+      </div>
+    `;
     return;
   }
 
   if (!validateBinaryInput(ctStr)) {
     outEl.innerHTML = `
       <div class="output-section">
-        <p><b>Error:</b> Ciphertext must contain only 0s, 1s, and spaces.</p>
-      </div>
-    `;
-    return;
-  }
-
-  if (!validateBinaryInput(keyStr)) {
-    outEl.innerHTML = `
-      <div class="output-section">
-        <p><b>Error:</b> Key must contain only 0s, 1s, and spaces.</p>
+        <p><b>Error:</b> Ciphertext contains invalid characters. Use only 0, 1, and spaces.</p>
       </div>
     `;
     return;
   }
 
   // Parse to bit arrays
-  const ctBits = parseBinaryString(ctStr);
   const keyBits = parseBinaryString(keyStr);
+  const ctBits = parseBinaryString(ctStr);
 
   // Check lengths match
-  if (ctBits.length !== keyBits.length) {
+  if (keyBits.length !== ctBits.length) {
     outEl.innerHTML = `
       <div class="output-section">
-        <p><b>Error:</b> Ciphertext and key must have the same length.</p>
-        <p>Ciphertext: ${ctBits.length} bits, Key: ${keyBits.length} bits</p>
+        <p><b>Error:</b> Key and ciphertext lengths don't match.</p>
+        <p>Key: ${keyBits.length} bits | Ciphertext: ${ctBits.length} bits</p>
       </div>
     `;
     return;
@@ -300,23 +355,26 @@ function decryptMessage() {
   try {
     decodedMessage = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(ptBytes));
   } catch (e) {
-    decodedMessage = "(Could not decode as UTF-8 text)";
+    decodedMessage = "(Could not decode as UTF-8 text - data may be corrupted)";
   }
 
   outEl.innerHTML = `
     <div class="output-section">
-      <p><b>Decrypted message:</b></p>
-      <p class="code">${decodedMessage}</p>
+      <p><b>Decrypted Message:</b></p>
+      <div class="decrypted-message">${decodedMessage}</div>
     </div>
   `;
 }
 
-// ------------------- Enter-to-run -------------------
+/**
+ * Event listener for Enter key to trigger encryption
+ */
 document.addEventListener("DOMContentLoaded", () => {
   const inputEl = document.getElementById("message");
   if (inputEl) {
     inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.code === "NumpadEnter") {
+      // Ctrl+Enter or Cmd+Enter to encrypt (allow normal Enter for new lines)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "Enter" || e.code === "Enter")) {
         e.preventDefault();
         runQKD();
       }
