@@ -66,25 +66,28 @@ function createTruncatedDisplay(str, id, max = 80) {
   const truncated = str.slice(0, max) + "...";
   return `
     <span class="code" id="${id}-display">${truncated}</span>
-    <button class="show-all-btn" onclick="toggleShowAll('${id}', ${max})">Show All</button>
+    <button class="show-all-btn" onclick="toggleShowAll('${id}')">Show All</button>
     <span class="code" id="${id}-full" style="display:none;">${str}</span>
   `;
 }
 
 // Toggle between truncated and full display
-function toggleShowAll(id, max) {
+function toggleShowAll(id) {
   const displayEl = document.getElementById(`${id}-display`);
   const fullEl = document.getElementById(`${id}-full`);
-  const btn = event.target;
+  const btnId = `btn-${id}`;
+  
+  // Find the button by looking for it in the parent
+  const btn = displayEl.parentElement.querySelector('.show-all-btn');
   
   if (fullEl.style.display === "none") {
     displayEl.style.display = "none";
-    fullEl.style.display = "block";
-    btn.textContent = "Show Less";
+    fullEl.style.display = "inline";
+    if (btn) btn.textContent = "Show Less";
   } else {
     displayEl.style.display = "inline";
     fullEl.style.display = "none";
-    btn.textContent = "Show All";
+    if (btn) btn.textContent = "Show All";
   }
 }
 
