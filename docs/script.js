@@ -53,7 +53,7 @@ function groupBits8(bits) {
 // Group only full bytes from a bit array (drop leftovers)
 function groupBitsFullBytes(bits) {
   const s = bits.map(b => (b ? "1" : "0")).join("");
-  const fullLen = (s.length >> 3) << 3; // floor to multiple of 8
+  const fullLen = (s.length >> 3) << 3;
   return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
 }
 
@@ -62,7 +62,17 @@ function truncate(str, max = 80) {
   return str.length > max ? str.slice(0, max) + "..." : str;
 }
 
-// ------------------- Main BB84 Simulation -------------------
+// Validate binary input (only 0, 1, and spaces)
+function validateBinaryInput(str) {
+  return /^[01\s]*$/.test(str);
+}
+
+// Parse binary string to bit array (ignoring spaces)
+function parseBinaryString(str) {
+  return str.replace(/\s/g, "").split("").map(ch => parseInt(ch, 10));
+}
+
+// ------------------- Encryption (Left Panel) -------------------
 
 function runQKD() {
   const messageInput = document.getElementById("message");
@@ -83,10 +93,10 @@ function runQKD() {
   // Convert message to bytes and bits (UTF-8)
   const msgBytes = new TextEncoder().encode(message);
   const msgBits = bytesToBits(msgBytes);
-  const neededKeyBits = msgBits.length; // must match plaintext bit length
+  const neededKeyBits = msgBits.length;
 
   // Generate raw BB84 size so sifted key is long enough
-  const MULTIPLIER = 8; // realistic: 8–16
+  const MULTIPLIER = 8;
   const n = neededKeyBits * MULTIPLIER;
 
   // Simulate BB84
@@ -111,14 +121,9 @@ function runQKD() {
   // Encrypt: ciphertext = plaintext XOR key (bitwise)
   const ctBits = xorBits(msgBits, keyBitsUsed);
 
-  // Decrypt (demonstration): plaintext = ciphertext XOR key
-  const ptBitsRecovered = xorBits(ctBits, keyBitsUsed);
-  const ptBytesRecovered = bitsToBytes(ptBitsRecovered);
-  const decodedMessage = new TextDecoder().decode(Uint8Array.from(ptBytesRecovered));
-
   // Prepare display
-  const groupedKeyAll  = groupBitsFullBytes(siftedKey);  // show only full bytes
-  const groupedKeyUsed = groupBits8(keyBitsUsed);        // exact bits used
+  const groupedKeyAll  = groupBitsFullBytes(siftedKey);
+  const groupedKeyUsed = groupBits8(keyBitsUsed);
   const groupedPt      = groupBits8(msgBits);
   const groupedCt      = groupBits8(ctBits);
 
@@ -151,9 +156,76 @@ function runQKD() {
 
     <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
        <span class="code">${groupedCt}</span></p>
+  `;
+}
 
-    <p><b>Decoded message (ciphertext XOR key):</b><br>
-       <span class="code">${decodedMessage}</span></p>
+// ------------------- Decryption (Right Panel) -------------------
+
+function decryptMessage() {
+  const ctInput = document.getElementById("ciphertext");
+  const keyInput = document.getElementById("keyInput");
+  const outEl = document.getElementById("decryptOutput");
+
+  if (!ctInput || !keyInput || !outEl) {
+    console.error("Required decrypt elements not found");
+    return;
+  }
+
+  const ctStr = ctInput.value.trim();
+  const keyStr = keyInput.value.trim();
+
+  // Validate inputs
+  if (!ctStr || !keyStr) {
+    outEl.innerHTML = "<p>Please enter both ciphertext and key.</p>";
+    return;
+  }
+
+  if (!validateBinaryInput(ctStr)) {
+    outEl.innerHTML = "<p><b>Error:</b> Ciphertext must contain only 0s, 1s, and spaces.</p>";
+    return;
+  }
+
+  if (!validateBinaryInput(keyStr)) {
+    outEl.innerHTML = "<p><b>Error:</b> Key must contain only 0s, 1s, and spaces.</p>";
+    return;
+  }
+
+  // Parse to bit arrays
+  const ctBits = parseBinaryString(ctStr);
+  const keyBits = parseBinaryString(keyStr);
+
+  // Check lengths match
+  if (ctBits.length !== keyBits.length) {
+    outEl.innerHTML = `
+      <p><b>Error:</b> Ciphertext and key must have the same length.</p>
+      <p>Ciphertext: ${ctBits.length} bits, Key: ${keyBits.length} bits</p>
+    `;
+    return;
+  }
+
+  // Check length is a multiple of 8
+  if (ctBits.length % 8 !== 0) {
+    outEl.innerHTML = `
+      <p><b>Error:</b> Bit length must be a multiple of 8.</p>
+      <p>Current length: ${ctBits.length} bits</p>
+    `;
+    return;
+  }
+
+  // Decrypt: plaintext = ciphertext XOR key
+  const ptBits = xorBits(ctBits, keyBits);
+  const ptBytes = bitsToBytes(ptBits);
+
+  let decodedMessage;
+  try {
+    decodedMessage = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(ptBytes));
+  } catch (e) {
+    decodedMessage = "(Could not decode as UTF-8 text)";
+  }
+
+  outEl.innerHTML = `
+    <p><b>Decrypted message:</b></p>
+    <p class="code">${decodedMessage}</p>
   `;
 }
 
@@ -165,6 +237,28 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter" || e.code === "NumpadEnter") {
         e.preventDefault();
         runQKD();
+      }
+    });
+  }
+
+  // Allow Enter in decrypt textareas to trigger decrypt
+  const ctInput = document.getElementById("ciphertext");
+  const keyInput = document.getElementById("keyInput");
+  
+  if (ctInput) {
+    ctInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        decryptMessage();
+      }
+    });
+  }
+  
+  if (keyInput) {
+    keyInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        decryptMessage();
       }
     });
   }
