@@ -130,7 +130,7 @@ button:hover {
 }
 
 .code {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Courier New', monospace;
   background: white;
   padding: 8px 10px;
   border-radius: 4px;
