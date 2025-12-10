@@ -91,9 +91,12 @@ function runQKD() {
     const siftedKey = siftBits(bitsA, basesA, basesB);
     
     if (siftedKey.length < neededKeyBits) {
-        outEl.innerHTML =       <p><b>Error:</b> Sifted key too short to encrypt message.</p>       <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting.       Try a shorter message or increase the multiplier.</p>    ;
+        outEl.innerHTML =
+        '<p><b>Error:</b> Sifted key too short to encrypt message.</p>' +
+        '<p>Needed ' + neededKeyBits + ' bits, but only got ' + siftedKey.length + ' bits after sifting. ' +
+        'Try a shorter message or increase the multiplier.</p>';
         return;
-    }
+}
     
     // Use exactly the first neededKeyBits for OTP
     const keyBitsUsed = siftedKey.slice(0, neededKeyBits);
