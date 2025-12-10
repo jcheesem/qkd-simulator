@@ -21,31 +21,27 @@ function groupBits(bits) {
     return s.replace(/(.{8})/g, "$1 ").trim();
 }
 
-// XOR–encrypt a string using repeating bits from the key
+// XOR–encrypt and return ASCII-safe hex
 function encodeMessage(msg, keyBits) {
-// Convert message to bytes (ASCII/UTF‑8)
-const msgBytes = new TextEncoder().encode(msg);
-
-vbnet
-Copy code
-// Build key bytes from sifted key bits
-const keyBytes = [];
-for (let i = 0; i + 7 < keyBits.length; i += 8) {
-    keyBytes.push(parseInt(keyBits.slice(i, i + 8).join(""), 2));
-}
-
-// If not enough key bytes, stop
-if (keyBytes.length < msgBytes.length) {
-    return "(Error: Sifted key too short to encrypt message!)";
-}
-
-// XOR message bytes with key bytes
-const encryptedBytes = msgBytes.map((b, i) => b ^ keyBytes[i]);
-
-// Return ASCII‑only hex string
-return Array.from(encryptedBytes)
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+    // Convert message to bytes (ASCII/UTF-8)
+    const msgBytes = new TextEncoder().encode(msg);
+    
+    // Build key bytes from sifted key bits
+    const keyBytes = [];
+    for (let i = 0; i + 7 < keyBits.length; i += 8) {
+        keyBytes.push(parseInt(keyBits.slice(i, i + 8).join(""), 2));
+    }
+    
+    // If not enough key bytes, stop
+    if (keyBytes.length < msgBytes.length) {
+        return "(Error: Sifted key too short to encrypt message!)";
+    }
+    
+    // XOR message bytes with key bytes
+    const encryptedBytes = msgBytes.map((b, i) => b ^ keyBytes[i]);
+    
+    // Return ASCII-only hex string
+    return encryptedBytes.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 // Truncate each long sequence for display only
@@ -56,30 +52,31 @@ function truncate(str, max = 80) {
 // ------------------- Main BB84 Simulation -------------------
 
 function runQKD() {
-    let message = document.getElementById("message").value.trim();
+    const messageInput = document.getElementById("message");
+    let message = messageInput.value.trim();
     if (message.length === 0) {
         document.getElementById("output").innerHTML =
-            "<p>Please enter a message.</p>";
+        "<p>Please enter a message.</p>";
         return;
     }
-
+    
     // Increase initial BB84 size so sifted key is long enough
     const MULTIPLIER = 8;      // realistic: 8–16
     let n = message.length * 8 * MULTIPLIER;
-
+    
     let bitsA  = randomBits(n);
     let basesA = randomBases(n);
     let basesB = randomBases(n);
     
     let siftedKey = siftBits(bitsA, basesA, basesB);
     let encrypted = encodeMessage(message, siftedKey);
-
+    
     // Format 8-bit grouping
     let groupedKey = groupBits(siftedKey);
     
-    let rawCount = n;                  // total raw bits generated
+    let rawCount = n;                   // total raw bits generated
     let siftedCount = siftedKey.length; // bits kept after sifting
-
+    
     document.getElementById("output").innerHTML = `
       <p><b>Raw bits generated:</b> ${rawCount}</p>
       <p><b>Bits kept after sifting:</b> ${siftedCount}</p>
@@ -95,10 +92,20 @@ function runQKD() {
     
       <p><b>Sifted key (8-bit groups):</b><br>
          <span class="code">${groupedKey}</span></p>
-
+    
       <p><b>Encrypted message (hex):</b><br>
          <span class="code">${encrypted}</span></p>
-
-`;
-
+    `;
 }
+
+// Run on Enter key
+document.addEventListener("DOMContentLoaded", () => {
+    const inputEl = document.getElementById("message");
+    if (inputEl) {
+        inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            runQKD();
+        }
+        });
+    }
+});
