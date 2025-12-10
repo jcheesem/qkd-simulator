@@ -22,7 +22,8 @@
     <!-- LEFT: Encrypt -->
     <div class="encrypt-section">
       <h2>Encrypt Message</h2>
-      <input id="message" placeholder="Enter a message to encrypt">
+      <label for="message">Your Message:</label>
+      <textarea id="message" placeholder="Enter a message to encrypt (supports multi-line text, emojis, etc.)" rows="6"></textarea>
       <button onclick="runQKD()">Generate Key + Encrypt</button>
       <div id="output"></div>
     </div>
