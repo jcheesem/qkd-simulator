@@ -59,7 +59,7 @@ function copyToClipboard(text, btnId) {
 }
 
 // Create truncated display with "Show All" button
-function createTruncatedDisplay(str, id, maxChars = 80) {
+function createTruncatedDisplay(str, id, maxChars = 100) {
   if (str.length <= maxChars) {
     return `<span class="code">${str}</span>`;
   }
