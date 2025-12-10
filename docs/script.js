@@ -53,23 +53,33 @@ function runQKD() {
     let bitsA  = randomBits(n);
     let basesA = randomBases(n);
     let basesB = randomBases(n);
-
+    
     let siftedKey = siftBits(bitsA, basesA, basesB);
-
+    let rawCount = n;                  // total raw bits generated
+    let siftedCount = siftedKey.length; // bits kept after sifting
     let encrypted = encodeMessage(message, siftedKey);
 
     // Format 8-bit grouping
     let groupedKey = groupBits(siftedKey);
 
     document.getElementById("output").innerHTML = `
-      <p><b>Alice bits:</b><br><span class="code">${bitsA.join("")}</span></p>
-      <p><b>Alice bases:</b><br><span class="code">${basesA.join("")}</span></p>
-      <p><b>Bob bases:</b><br><span class="code">${basesB.join("")}</span></p>
-
+      <p><b>Raw bits generated:</b> ${rawCount}</p>
+      <p><b>Bits kept after sifting:</b> ${siftedCount}</p>
+    
+      <p><b>Alice bits:</b><br>
+         <span class="code">${truncate(bitsA.join(""))}</span></p>
+    
+      <p><b>Alice bases:</b><br>
+         <span class="code">${truncate(basesA.join(""))}</span></p>
+    
+      <p><b>Bob bases:</b><br>
+         <span class="code">${truncate(basesB.join(""))}</span></p>
+    
       <p><b>Sifted key (8-bit groups):</b><br>
-         <span class="code">${groupedKey}</span></p>
-
+         <span class="code">${truncate(groupedKey)}</span></p>
+    
       <p><b>Encrypted message:</b><br>
          <span class="code">${encrypted}</span></p>
-    `;
+`;
+
 }
