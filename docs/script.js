@@ -23,19 +23,41 @@ function groupBits(bits) {
 
 // XOR–encrypt a string using repeating bits from the key
 function encodeMessage(msg, keyBits) {
-    if (keyBits.length === 0) return "(No sifted key generated!)";
+    // Convert message into binary (8 bits per character)
+    let msgBits = msg.split("").map(ch => {
+        return ch.charCodeAt(0).toString(2).padStart(8, "0");
+    });
 
-    return msg
-        .split("")
-        .map((ch, i) =>
-            String.fromCharCode(
-                ch.charCodeAt(0) ^ keyBits[i % keyBits.length]
-            )
-        )
-        .join("");
+    // Group siftedKey into bytes
+    let keyBytes = [];
+    for (let i = 0; i + 7 < keyBits.length; i += 8) {
+        keyBytes.push(keyBits.slice(i, i + 8).join(""));
+    }
+
+    // If not enough key bytes, stop
+    if (keyBytes.length < msgBits.length) {
+        return "(Error: Sifted key too short to encrypt message!)";
+    }
+
+    // XOR msg bytes with key bytes
+    let encryptedBits = msgBits.map((byte, i) => {
+        let keyByte = keyBytes[i];
+        let xor = "";
+        for (let j = 0; j < 8; j++) {
+            xor += (byte[j] ^ keyByte[j]);
+        }
+        return xor;
+    });
+
+    // Convert encrypted bits → text
+    let encryptedChars = encryptedBits.map(b => 
+        String.fromCharCode(parseInt(b, 2))
+    );
+
+    return encryptedChars.join("");
 }
 // Truncate each long sequence for display only
-function truncate(str, max = 120) {
+function truncate(str, max = 80) {
     return str.length > max ? str.slice(0, max) + "..." : str;
 }
 
@@ -58,12 +80,13 @@ function runQKD() {
     let basesB = randomBases(n);
     
     let siftedKey = siftBits(bitsA, basesA, basesB);
-    let rawCount = n;                  // total raw bits generated
-    let siftedCount = siftedKey.length; // bits kept after sifting
     let encrypted = encodeMessage(message, siftedKey);
 
     // Format 8-bit grouping
     let groupedKey = groupBits(siftedKey);
+    
+    let rawCount = n;                  // total raw bits generated
+    let siftedCount = siftedKey.length; // bits kept after sifting
 
     document.getElementById("output").innerHTML = `
       <p><b>Raw bits generated:</b> ${rawCount}</p>
@@ -79,7 +102,7 @@ function runQKD() {
          <span class="code">${truncate(basesB.join(""))}</span></p>
     
       <p><b>Sifted key (8-bit groups):</b><br>
-         <span class="code">${truncate(groupedKey)}</span></p>
+         <span class="code">${groupedKey}</span></p>
     
       <p><b>Encrypted message:</b><br>
          <span class="code">${encrypted}</span></p>
