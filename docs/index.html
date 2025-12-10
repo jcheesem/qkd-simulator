@@ -16,12 +16,28 @@
 <div class="container">
   <h1>BB84 Quantum Key Distribution Simulator</h1>
 
-  <div class="input-section">
-    <input id="message" placeholder="Enter a short message">
-    <button onclick="runQKD()">Generate Key + Encrypt</button>
-  </div>
+  <div class="split-layout">
+    <!-- LEFT: Encrypt -->
+    <div class="encrypt-section">
+      <h2>Encrypt Message</h2>
+      <input id="message" placeholder="Enter a message to encrypt">
+      <button onclick="runQKD()">Generate Key + Encrypt</button>
+      <div id="output" class="output-section"></div>
+    </div>
 
-  <div id="output" class="output-section"></div>
+    <!-- RIGHT: Decrypt -->
+    <div class="decrypt-section">
+      <h2>Decrypt Message</h2>
+      <label for="ciphertext">Ciphertext (bits):</label>
+      <textarea id="ciphertext" placeholder="Paste ciphertext bits (0s, 1s, spaces only)" rows="3"></textarea>
+      
+      <label for="keyInput">Key (bits):</label>
+      <textarea id="keyInput" placeholder="Paste key bits (0s, 1s, spaces only)" rows="3"></textarea>
+      
+      <button onclick="decryptMessage()">Decrypt</button>
+      <div id="decryptOutput" class="output-section"></div>
+    </div>
+  </div>
 </div>
 
 <script src="script.js"></script>
