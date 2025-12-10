@@ -104,6 +104,22 @@ button:hover {
   margin-bottom: 10px;
 }
 
+.show-all-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  margin-left: 10px;
+  background: #6c7a89;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.show-all-btn:hover {
+  background: #5a6875;
+}
+
 .code {
   font-family: monospace;
   background: white;
