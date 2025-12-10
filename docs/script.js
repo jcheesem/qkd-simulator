@@ -59,7 +59,7 @@ function copyToClipboard(text, btnId) {
 }
 
 // Create truncated display with "Show All" button
-function createTruncatedDisplay(str, id, maxChars = 100) {
+function createTruncatedDisplay(str, id, maxChars = 80) {
   if (str.length <= maxChars) {
     return `<span class="code">${str}</span>`;
   }
@@ -114,10 +114,11 @@ function runQKD() {
       ptBits.push((byte >> i) & 1);
     }
   }
+  
   const neededKeyBits = ptBits.length;
 
   // Generate more raw bits than needed (accounting for ~50% sifting efficiency)
-  const rawCount = Math.max(neededKeyBits * 4, 2000);
+  const rawCount = Math.max(neededKeyBits * 3, 1000);
   
   // Alice generates random bits and bases
   const bitsA = [];
