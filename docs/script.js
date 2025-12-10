@@ -7,7 +7,7 @@ function randomBits(len) {
 
 // Generate random bases (+ or ×)
 function randomBases(len) {
-    return randomBits(len).map(x => x ? "+" : "×");
+    return randomBits(len).map(x => (x ? "+" : "×"));
 }
 
 // Keep only positions where Alice and Bob used the same basis
@@ -15,18 +15,20 @@ function siftBits(bitsA, basesA, basesB) {
     return bitsA.filter((_, i) => basesA[i] === basesB[i]);
 }
 
-// Group bit array into 8-bit chunks
-function groupBits(bits) {
-    let s = bits.join("");
-    return s.replace(/(.{8})/g, "$1 ").trim();
+// Group bit array into 8-bit chunks (drop any leftover bits)
+function groupBitsFullBytes(bits) {
+    const s = bits.join("");
+    const fullLen = (s.length >> 3) << 3; // floor to multiple of 8
+    const full = s.slice(0, fullLen);
+    return full.replace(/(.{8})/g, "$1 ").trim();
 }
 
 // XOR–encrypt and return ASCII-safe hex
-function encodeMessage(msg, keyBits) {
+function encodeMessageHex(msg, keyBits) {
     // Convert message to bytes (ASCII/UTF-8)
     const msgBytes = new TextEncoder().encode(msg);
     
-    // Build key bytes from sifted key bits
+    // Build key bytes from sifted key bits (only full bytes)
     const keyBytes = [];
     for (let i = 0; i + 7 < keyBits.length; i += 8) {
         keyBytes.push(parseInt(keyBits.slice(i, i + 8).join(""), 2));
@@ -40,11 +42,13 @@ function encodeMessage(msg, keyBits) {
     // XOR message bytes with key bytes
     const encryptedBytes = msgBytes.map((b, i) => b ^ keyBytes[i]);
     
-    // Return ASCII-only hex string
-    return encryptedBytes.map(b => b.toString(16).padStart(2, "0")).join("");
+    // Return hex and a grouped version (for display)
+    const hex = encryptedBytes.map(b => b.toString(16).padStart(2, "0")).join("");
+    const groupedHex = hex.replace(/(.{2})/g, "$1 ").trim();
+    return { hex, groupedHex, byteLen: encryptedBytes.length };
 }
 
-// Truncate each long sequence for display only
+// Truncate long sequences for preview only
 function truncate(str, max = 80) {
     return str.length > max ? str.slice(0, max) + "..." : str;
 }
@@ -53,48 +57,52 @@ function truncate(str, max = 80) {
 
 function runQKD() {
     const messageInput = document.getElementById("message");
-    let message = messageInput.value.trim();
+    const message = messageInput.value.trim();
+    const outEl = document.getElementById("output");
+    
     if (message.length === 0) {
-        document.getElementById("output").innerHTML =
-        "<p>Please enter a message.</p>";
+        outEl.innerHTML = "<p>Please enter a message.</p>";
         return;
     }
     
     // Increase initial BB84 size so sifted key is long enough
-    const MULTIPLIER = 8;      // realistic: 8–16
-    let n = message.length * 8 * MULTIPLIER;
+    const MULTIPLIER = 8; // realistic: 8–16
+    const n = message.length * 8 * MULTIPLIER;
     
-    let bitsA  = randomBits(n);
-    let basesA = randomBases(n);
-    let basesB = randomBases(n);
+    // Simulate
+    const bitsA  = randomBits(n);
+    const basesA = randomBases(n);
+    const basesB = randomBases(n);
     
-    let siftedKey = siftBits(bitsA, basesA, basesB);
-    let encrypted = encodeMessage(message, siftedKey);
+    const siftedKey = siftBits(bitsA, basesA, basesB);
+    const groupedKey = groupBitsFullBytes(siftedKey);
     
-    // Format 8-bit grouping
-    let groupedKey = groupBits(siftedKey);
+    const enc = encodeMessageHex(message, siftedKey);
+    const encryptedHex = enc.hex;
+    const encryptedHexGrouped = enc.groupedHex;
     
-    let rawCount = n;                   // total raw bits generated
-    let siftedCount = siftedKey.length; // bits kept after sifting
+    const rawCount = n;
+    const siftedCount = siftedKey.length;
+    const fullKeyBytes = Math.floor(siftedCount / 8);
     
-    document.getElementById("output").innerHTML = `
-      <p><b>Raw bits generated:</b> ${rawCount}</p>
-      <p><b>Bits kept after sifting:</b> ${siftedCount}</p>
+    outEl.innerHTML = `
+    <p><b>Raw bits generated:</b> ${rawCount}</p>
+    <p><b>Bits kept after sifting:</b> ${siftedCount} (${fullKeyBytes} full bytes usable)</p>
     
-      <p><b>Alice bits:</b><br>
-         <span class="code">${truncate(bitsA.join(""))}</span></p>
+    <p><b>Alice bits:</b><br>
+       <span class="code">${truncate(bitsA.join(""))}</span></p>
     
-      <p><b>Alice bases:</b><br>
-         <span class="code">${truncate(basesA.join(""))}</span></p>
+    <p><b>Alice bases:</b><br>
+       <span class="code">${truncate(basesA.join(""))}</span></p>
     
-      <p><b>Bob bases:</b><br>
-         <span class="code">${truncate(basesB.join(""))}</span></p>
+    <p><b>Bob bases:</b><br>
+       <span class="code">${truncate(basesB.join(""))}</span></p>
     
-      <p><b>Sifted key (8-bit groups):</b><br>
-         <span class="code">${groupedKey}</span></p>
+    <p><b>Sifted key (8-bit groups):</b><br>
+       <span class="code">${groupedKey}</span></p>
     
-      <p><b>Encrypted message (hex):</b><br>
-         <span class="code">${encrypted}</span></p>
+    <p><b>Encrypted message (hex):</b> ${enc.byteLen} bytes<br>
+       <span class="code">${encryptedHexGrouped}</span></p>
     `;
 }
 
@@ -103,9 +111,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputEl = document.getElementById("message");
     if (inputEl) {
         inputEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            runQKD();
-        }
+            if (e.key === "Enter") {
+                runQKD();
+            }
         });
     }
 });
