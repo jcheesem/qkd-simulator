@@ -15,8 +15,7 @@
 
 <div class="container">
   <h1>Encrypt Messages with BB84</h1>
-  <p class="subtitle">Enter your message and a secret key for one-time pad encryption is established using BB84 protocol.
-    <br>The ciphertext is already encoded for you! Send your ciphertext and key to someone and they can decrypt it.</p>
+  <p class="subtitle">Enter your message and a secret key for one-time pad encryption is established using BB84 protocol.<br>The ciphertext is already encoded for you!<br>Send your ciphertext and key to someone and they can decrypt it.</p>
 
   <div class="split-layout">
     <!-- LEFT: Encrypt -->
@@ -30,11 +29,12 @@
     <!-- RIGHT: Decrypt -->
     <div class="decrypt-section">
       <h2>Decrypt Message</h2>
-      <label for="ciphertext">Ciphertext (bits):</label>
-      <textarea id="ciphertext" placeholder="Paste ciphertext bits (0s, 1s, spaces only)" rows="3"></textarea>
       
       <label for="keyInput">Key (bits):</label>
       <textarea id="keyInput" placeholder="Paste key bits (0s, 1s, spaces only)" rows="3"></textarea>
+      
+      <label for="ciphertext">Ciphertext (bits):</label>
+      <textarea id="ciphertext" placeholder="Paste ciphertext bits (0s, 1s, spaces only)" rows="3"></textarea>
       
       <button onclick="decryptMessage()">Decrypt</button>
       <div id="decryptOutput"></div>
