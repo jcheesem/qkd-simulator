@@ -116,8 +116,8 @@ function runQKD() {
   }
   const neededKeyBits = ptBits.length;
 
-  // Generate more raw bits than needed
-  const rawCount = Math.max(neededKeyBits * 2, 1000);
+  // Generate more raw bits than needed (accounting for ~50% sifting efficiency)
+  const rawCount = Math.max(neededKeyBits * 4, 2000);
   
   // Alice generates random bits and bases
   const bitsA = [];
