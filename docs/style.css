@@ -183,15 +183,6 @@ button:hover {
   padding: 6px 12px;
   font-size: 12px;
   margin-top: 8px;
-  margin-bottom: 20px;
-  background: #3498db;
-  display: block;
-}
-
-.copy-btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  margin-top: 8px;
   margin-right: 10px;
   background: #3498db;
   display: inline-block;
