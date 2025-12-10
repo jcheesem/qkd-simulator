@@ -34,9 +34,14 @@ function bitsToBytes(bits) {
         for (let j = 0; j < 8; j++) {
             v = (v << 1) | bits[i + j];
         }
-    bytes.push(v);
+        bytes.push(v);
     }
     return bytes;
+}
+
+// XOR two equal-length bit arrays
+function xorBits(a, b) {
+    return a.map((bit, i) => bit ^ b[i]);
 }
 
 // Group bit array into 8-bit chunks (string of 0/1)
@@ -50,11 +55,6 @@ function groupBitsFullBytes(bits) {
     const s = bits.map(b => (b ? "1" : "0")).join("");
     const fullLen = (s.length >> 3) << 3;
     return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
-}
-
-// XOR two equal-length bit arrays
-function xorBits(a, b) {
-    return a.map((bit, i) => bit ^ b[i]);
 }
 
 // Truncate long sequences for preview only
@@ -77,10 +77,9 @@ function runQKD() {
     // Convert message to bytes and bits (UTF-8)
     const msgBytes = new TextEncoder().encode(message);
     const msgBits = bytesToBits(msgBytes);
-    const neededKeyBits = msgBits.length;     // must match plaintext bit length
+    const neededKeyBits = msgBits.length; // must match plaintext bit length
     
     // Generate raw BB84 size so sifted key is long enough
-    // (we need enough bits after sifting to cover the message bits)
     const MULTIPLIER = 8; // realistic: 8–16
     const n = neededKeyBits * MULTIPLIER;
     
@@ -92,10 +91,8 @@ function runQKD() {
     const siftedKey = siftBits(bitsA, basesA, basesB);
     
     if (siftedKey.length < neededKeyBits) {
-    outEl.innerHTML =
-        <p><b>Error:</b> Sifted key too short to encrypt message.</p>
-        <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting. Try a shorter message or increase the multiplier.</p>    ;
-    return;
+        outEl.innerHTML =       <p><b>Error:</b> Sifted key too short to encrypt message.</p>       <p>Needed ${neededKeyBits} bits, but only got ${siftedKey.length} bits after sifting.       Try a shorter message or increase the multiplier.</p>    ;
+        return;
     }
     
     // Use exactly the first neededKeyBits for OTP
@@ -110,9 +107,10 @@ function runQKD() {
     const decodedMessage = new TextDecoder().decode(Uint8Array.from(ptBytesRecovered));
     
     // Prepare display
-    const groupedKeyAll = groupBitsFullBytes(siftedKey);
+    const groupedKeyAll  = groupBitsFullBytes(siftedKey);
     const groupedKeyUsed = groupBits8(keyBitsUsed);
-    const groupedCt = groupBits8(ctBits);
+    const groupedCt      = groupBits8(ctBits);
+    const groupedPt      = groupBits8(msgBits);
     
     const rawCount = n;
     const siftedCount = siftedKey.length;
@@ -138,20 +136,24 @@ function runQKD() {
     <p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
        <span class="code">${groupedKeyUsed}</span></p>
     
-    <p><b>Ciphertext (bits, 8-bit groups):</b><br>
+    <p><b>Plaintext (bits):</b><br>
+       <span class="code">${groupedPt}</span></p>
+    
+    <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
        <span class="code">${groupedCt}</span></p>
     
-    <p><b>Decoded message (from ciphertext XOR key):</b><br>
+    <p><b>Decoded message (ciphertext XOR key):</b><br>
        <span class="code">${decodedMessage}</span></p>
     `;
 }
 
-// Run on Enter key
+// ------------------- Enter-to-run -------------------
 document.addEventListener("DOMContentLoaded", () => {
     const inputEl = document.getElementById("message");
     if (inputEl) {
         inputEl.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" || e.code === "NumpadEnter") {
+                e.preventDefault();
                 runQKD();
             }
         });
