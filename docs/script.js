@@ -125,13 +125,13 @@ function runQKD() {
   const basesA = [];
   for (let i = 0; i < rawCount; i++) {
     bitsA.push(Math.random() < 0.5 ? 0 : 1);
-    basesA.push(Math.random() < 0.5 ? 0 : 1);
+    basesA.push(Math.random() < 0.5 ? '+' : 'x');
   }
-
+  
   // Bob chooses random bases
   const basesB = [];
   for (let i = 0; i < rawCount; i++) {
-    basesB.push(Math.random() < 0.5 ? 0 : 1);
+    basesB.push(Math.random() < 0.5 ? '+' : 'x');
   }
 
   // Sifting: keep bits where bases match
@@ -154,7 +154,7 @@ function runQKD() {
 
   // Encrypt: ciphertext = plaintext XOR key
   const ctBits = xorBits(ptBits, keyBitsForEncrypt);
-
+  
   // Format for display
   const groupedKeyUsed = formatBitsInGroups(keyBitsForEncrypt);
   const groupedCt = formatBitsInGroups(ctBits);
@@ -162,8 +162,8 @@ function runQKD() {
   const groupedPt = formatBitsInGroups(ptBits);
   
   const bitsAStr = formatBitsInGroups(bitsA);
-  const basesAStr = formatBitsInGroups(basesA);
-  const basesBStr = formatBitsInGroups(basesB);
+  const basesAStr = basesA.join("");  // Just join without grouping
+  const basesBStr = basesB.join("");  // Just join without grouping
 
   // Calculate statistics
   const messageChars = plaintext.length;
