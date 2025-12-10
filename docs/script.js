@@ -45,8 +45,7 @@ function parseBinaryString(str) {
 
 // Copy to clipboard
 function copyToClipboard(text, btnId) {
-  const cleanText = text.replace(/\s/g, "");
-  navigator.clipboard.writeText(cleanText).then(() => {
+  navigator.clipboard.writeText(text).then(() => {  // Copy with spaces intact
     const btn = document.getElementById(btnId);
     const originalText = btn.textContent;
     btn.textContent = "Copied!";
