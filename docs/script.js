@@ -1,32 +1,74 @@
-function randomBits(len){ return [...crypto.getRandomValues(new Uint8Array(len))].map(b=>b%2); }
-function randomBases(len){ return randomBits(len).map(x=> x ? "+" : "×"); }
+// ------------------- Utility Functions -------------------
 
-function siftBits(bitsA, basesA, basesB){
-    return bitsA.filter((_,i)=>basesA[i]===basesB[i]);
+// Generate an array of random bits (0 or 1)
+function randomBits(len) {
+    return [...crypto.getRandomValues(new Uint8Array(len))].map(b => b % 2);
 }
 
-function encodeMessage(msg,key){
-    return msg.split("")
-        .map((c,i)=> String.fromCharCode(c.charCodeAt(0) ^ key[i % key.length]))
+// Generate random bases (+ or ×)
+function randomBases(len) {
+    return randomBits(len).map(x => x ? "+" : "×");
+}
+
+// Keep only positions where Alice and Bob used the same basis
+function siftBits(bitsA, basesA, basesB) {
+    return bitsA.filter((_, i) => basesA[i] === basesB[i]);
+}
+
+// Group bit array into 8-bit chunks
+function groupBits(bits) {
+    let s = bits.join("");
+    return s.replace(/(.{8})/g, "$1 ").trim();
+}
+
+// XOR–encrypt a string using repeating bits from the key
+function encodeMessage(msg, keyBits) {
+    if (keyBits.length === 0) return "(No sifted key generated!)";
+
+    return msg
+        .split("")
+        .map((ch, i) =>
+            String.fromCharCode(
+                ch.charCodeAt(0) ^ keyBits[i % keyBits.length]
+            )
+        )
         .join("");
 }
 
-function runQKD(){
-    let message = document.getElementById("message").value;
 
-    let n = message.length * 8;     
+// ------------------- Main BB84 Simulation -------------------
+
+function runQKD() {
+    let message = document.getElementById("message").value.trim();
+    if (message.length === 0) {
+        document.getElementById("output").innerHTML =
+            "<p>Please enter a message.</p>";
+        return;
+    }
+
+    // Number of bits = 8 per character
+    let n = message.length * 8;
+
     let bitsA  = randomBits(n);
     let basesA = randomBases(n);
     let basesB = randomBases(n);
 
-    let siftedKey = siftBits(bitsA,basesA,basesB);
-    let encrypted = encodeMessage(message,siftedKey);
+    let siftedKey = siftBits(bitsA, basesA, basesB);
+
+    let encrypted = encodeMessage(message, siftedKey);
+
+    // Format 8-bit grouping
+    let groupedKey = groupBits(siftedKey);
 
     document.getElementById("output").innerHTML = `
-      <p><b>Alice bits:</b> ${bitsA.join("")}</p>
-      <p><b>Alice bases:</b> ${basesA.join("")}</p>
-      <p><b>Bob bases:</b>   ${basesB.join("")}</p>
-      <p><b>Sifted key:</b> ${siftedKey.join("")}</p>
-      <p><b>Encrypted message:</b> ${encrypted}</p>
+      <p><b>Alice bits:</b><br><span class="code">${bitsA.join("")}</span></p>
+      <p><b>Alice bases:</b><br><span class="code">${basesA.join("")}</span></p>
+      <p><b>Bob bases:</b><br><span class="code">${basesB.join("")}</span></p>
+
+      <p><b>Sifted key (8-bit groups):</b><br>
+         <span class="code">${groupedKey}</span></p>
+
+      <p><b>Encrypted message:</b><br>
+         <span class="code">${encrypted}</span></p>
     `;
 }
