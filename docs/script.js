@@ -1,26 +1,36 @@
-// ------------------- Utility Functions -------------------
+// ------------------- Helper Functions -------------------
 
-// Generate an array of random bits (0 or 1)
-function randomBits(len) {
-  return [...crypto.getRandomValues(new Uint8Array(len))].map(b => b % 2);
+function randomBits(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    arr.push(Math.random() < 0.5 ? 0 : 1);
+  }
+  return arr;
 }
 
-// Generate random bases (+ or ×)
-function randomBases(len) {
-  return randomBits(len).map(x => (x ? "+" : "×"));
+function randomBases(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    arr.push(Math.random() < 0.5 ? '+' : 'x');
+  }
+  return arr;
 }
 
-// Keep only positions where Alice and Bob used the same basis
 function siftBits(bitsA, basesA, basesB) {
-  return bitsA.filter((_, i) => basesA[i] === basesB[i]);
+  const sifted = [];
+  for (let i = 0; i < bitsA.length; i++) {
+    if (basesA[i] === basesB[i]) {
+      sifted.push(bitsA[i]);
+    }
+  }
+  return sifted;
 }
 
-// Bytes <-> Bits conversion
 function bytesToBits(bytes) {
   const bits = [];
-  for (const b of bytes) {
+  for (const byte of bytes) {
     for (let i = 7; i >= 0; i--) {
-      bits.push((b >> i) & 1);
+      bits.push((byte >> i) & 1);
     }
   }
   return bits;
@@ -28,69 +38,37 @@ function bytesToBits(bytes) {
 
 function bitsToBytes(bits) {
   const bytes = [];
-  const full = bits.length - (bits.length % 8);
-  for (let i = 0; i < full; i += 8) {
-    let v = 0;
+  for (let i = 0; i < bits.length; i += 8) {
+    let byte = 0;
     for (let j = 0; j < 8; j++) {
-      v = (v << 1) | bits[i + j];
+      byte = (byte << 1) | bits[i + j];
     }
-    bytes.push(v);
+    bytes.push(byte);
   }
   return bytes;
 }
 
-// XOR two equal-length bit arrays
 function xorBits(a, b) {
-  return a.map((bit, i) => bit ^ b[i]);
+  const result = [];
+  for (let i = 0; i < a.length; i++) {
+    result.push(a[i] ^ b[i]);
+  }
+  return result;
 }
 
-// Group bit array into 8-bit chunks (string of 0/1)
 function groupBits8(bits) {
-  const s = bits.map(b => (b ? "1" : "0")).join("");
-  return s.replace(/(.{8})/g, "$1 ").trim();
+  let str = "";
+  for (let i = 0; i < bits.length; i++) {
+    if (i > 0 && i % 8 === 0) str += " ";
+    str += bits[i];
+  }
+  return str;
 }
 
-// Group only full bytes from a bit array (drop leftovers)
 function groupBitsFullBytes(bits) {
-  const s = bits.map(b => (b ? "1" : "0")).join("");
-  const fullLen = (s.length >> 3) << 3;
-  return s.slice(0, fullLen).replace(/(.{8})/g, "$1 ").trim();
-}
-
-// Create truncated display with "Show All" button - prevents ellipsis wrapping
-function createTruncatedDisplay(str, id, max = 80) {
-  if (str.length <= max) {
-    return `<span class="code">${str}</span>`;
-  }
-  
-  // Truncate at max-3 to ensure "..." doesn't wrap
-  const truncated = str.slice(0, max - 3) + "...";
-  return `
-    <div class="code-container">
-      <span class="code" id="${id}-display" style="display:inline-block;">${truncated}</span>
-      <button class="show-all-btn" onclick="toggleShowAll('${id}')">Show All</button>
-      <div class="code-scrollable" id="${id}-full" style="display:none;">
-        <span style="font-family: 'Courier New', monospace; word-break: break-all;">${str}</span>
-      </div>
-    </div>
-  `;
-}
-
-// Toggle between truncated and full display
-function toggleShowAll(id) {
-  const displayEl = document.getElementById(`${id}-display`);
-  const fullEl = document.getElementById(`${id}-full`);
-  const btn = event.target;
-  
-  if (fullEl.style.display === "none") {
-    displayEl.style.display = "none";
-    fullEl.style.display = "block";
-    btn.textContent = "Show Less";
-  } else {
-    displayEl.style.display = "inline-block";
-    fullEl.style.display = "none";
-    btn.textContent = "Show All";
-  }
+  const fullByteCount = Math.floor(bits.length / 8);
+  const usableBits = bits.slice(0, fullByteCount * 8);
+  return groupBits8(usableBits);
 }
 
 // Validate binary input (only 0, 1, and spaces)
@@ -101,6 +79,50 @@ function validateBinaryInput(str) {
 // Parse binary string to bit array (ignoring spaces)
 function parseBinaryString(str) {
   return str.replace(/\s/g, "").split("").map(ch => parseInt(ch, 10));
+}
+
+// Create truncated display with "Show All" button
+function createTruncatedDisplay(str, id) {
+  const MAX_CHARS = 100;
+  if (str.length <= MAX_CHARS) {
+    return `<span class="code">${str}</span>`;
+  }
+  
+  const truncated = str.substring(0, MAX_CHARS);
+  return `
+    <div class="code-container">
+      <span class="code" id="${id}-display">${truncated}...</span>
+      <button class="show-all-btn" onclick="toggleFullDisplay('${id}', '${str}')">Show All</button>
+    </div>
+  `;
+}
+
+function toggleFullDisplay(id, fullStr) {
+  const displayEl = document.getElementById(`${id}-display`);
+  const btnEl = event.target;
+  
+  if (btnEl.textContent === "Show All") {
+    displayEl.innerHTML = `<div class="code-scrollable">${fullStr}</div>`;
+    btnEl.textContent = "Show Less";
+  } else {
+    const truncated = fullStr.substring(0, 100);
+    displayEl.textContent = truncated + "...";
+    btnEl.textContent = "Show All";
+  }
+}
+
+// Copy to clipboard function
+function copyToClipboard(text, buttonId) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(buttonId);
+    const originalText = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => {
+      btn.textContent = originalText;
+    }, 2000);
+  }).catch(err => {
+    console.error('Failed to copy:', err);
+  });
 }
 
 // ------------------- Encryption (Left Panel) -------------------
@@ -169,9 +191,21 @@ function runQKD() {
   const ptByteLen = msgBytes.length;
 
   outEl.innerHTML = `
+    <div class="output-section key-cipher-section">
+      <p><b>Key used</b><br>
+         <span class="subtitle-text">first ${ptByteLen} bytes = ${neededKeyBits} bits</span></p>
+      <span class="code">${groupedKeyUsed}</span>
+      <button class="copy-btn" id="copy-key-btn" onclick="copyToClipboard('${groupedKeyUsed}', 'copy-key-btn')">Copy Key</button>
+
+      <p><b>Ciphertext</b><br>
+         <span class="subtitle-text">bits = plaintext XOR key</span></p>
+      <span class="code">${groupedCt}</span>
+      <button class="copy-btn" id="copy-cipher-btn" onclick="copyToClipboard('${groupedCt}', 'copy-cipher-btn')">Copy Ciphertext</button>
+    </div>
+
     <div class="output-section">
-      <p><b>Raw bits generated:</b> ${rawCount}</p>
-      <p><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
+      <p class="small-text"><b>Raw bits generated:</b> ${rawCount}</p>
+      <p class="small-text"><b>Bits kept after sifting:</b> ${siftedCount} (${keyBytesUsable} full bytes usable)</p>
 
       <p><b>Alice bits:</b><br>
          ${createTruncatedDisplay(bitsAStr, 'alice-bits')}</p>
@@ -182,17 +216,13 @@ function runQKD() {
       <p><b>Bob bases:</b><br>
          ${createTruncatedDisplay(basesBStr, 'bob-bases')}</p>
 
-      <p><b>Sifted key (8-bit groups, full bytes only):</b><br>
-         <span class="code">${groupedKeyAll}</span></p>
+      <p><b>Sifted key</b><br>
+         <span class="subtitle-text">8-bit groups, full bytes only</span></p>
+      <span class="code">${groupedKeyAll}</span>
 
-      <p><b>Key used (first ${ptByteLen} bytes = ${neededKeyBits} bits):</b><br>
-         <span class="code">${groupedKeyUsed}</span></p>
-
-      <p><b>Plaintext (bits):</b><br>
-         <span class="code">${groupedPt}</span></p>
-
-      <p><b>Ciphertext (bits = plaintext XOR key):</b><br>
-         <span class="code">${groupedCt}</span></p>
+      <p><b>Plaintext</b><br>
+         <span class="subtitle-text">bits</span></p>
+      <span class="code">${groupedPt}</span>
     </div>
   `;
 }
@@ -289,28 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (e.key === "Enter" || e.code === "NumpadEnter") {
         e.preventDefault();
         runQKD();
-      }
-    });
-  }
-
-  // Allow Ctrl+Enter in decrypt textareas to trigger decrypt
-  const ctInput = document.getElementById("ciphertext");
-  const keyInput = document.getElementById("keyInput");
-  
-  if (ctInput) {
-    ctInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.ctrlKey) {
-        e.preventDefault();
-        decryptMessage();
-      }
-    });
-  }
-  
-  if (keyInput) {
-    keyInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.ctrlKey) {
-        e.preventDefault();
-        decryptMessage();
       }
     });
   }
