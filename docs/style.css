@@ -80,7 +80,7 @@ input:focus, textarea:focus {
 }
 
 textarea {
-  font-family: 'Courier New', monospace;
+  font-family: 'Open Sans', sans-serif;
   resize: vertical;
 }
 
@@ -131,7 +131,7 @@ button:hover {
 }
 
 .code {
-  font-family: 'Courier New', monospace;
+  font-family: 'Open Sans', sans-serif;
   background: white;
   padding: 8px 10px;
   border-radius: 4px;
