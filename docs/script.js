@@ -296,6 +296,83 @@ function decryptMessage() {
   `;
 }
 
+// ------------------- Share Functionality -------------------
+
+function shareMessage(key, ciphertext) {
+  // Create URL with parameters
+  const baseURL = 'https://jcheesem.github.io/qkd-simulator/';
+  const params = new URLSearchParams({
+    key: key.replace(/\s/g, ''),
+    cipher: ciphertext.replace(/\s/g, '')
+  });
+  const shareURL = `${baseURL}?${params.toString()}`;
+  
+  // Create share text
+  const shareText = `👀 Here's a secret message:\n\nCiphertext:\n${ciphertext}\n\nSecret Key:\n${key}\n\nDecrypt this message at ${shareURL}`;
+  
+  // Show share modal
+  showShareModal(shareText, shareURL, key, ciphertext);
+}
+
+function showShareModal(shareText, shareURL, key, ciphertext) {
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'share-modal';
+  modal.innerHTML = `
+    <div class="share-modal-content">
+      <span class="share-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+      <h3>Share Your Encrypted Message</h3>
+      
+      <div class="share-buttons">
+        <button onclick="shareViaEmail(\`${encodeURIComponent(shareText)}\`)">
+          📧 Email
+        </button>
+        <button onclick="shareViaTwitter(\`${encodeURIComponent(shareURL)}\`)">
+          🐦 Twitter
+        </button>
+        <button onclick="shareViaWhatsApp(\`${encodeURIComponent(shareText)}\`)">
+          💬 WhatsApp
+        </button>
+        <button onclick="shareViaTelegram(\`${encodeURIComponent(shareText)}\`)">
+          ✈️ Telegram
+        </button>
+        <button onclick="copyShareText(\`${shareText.replace(/`/g, '\\`')}\`)">
+          📋 Copy All
+        </button>
+      </div>
+      
+      <div class="share-preview">
+        <p><b>Preview:</b></p>
+        <textarea readonly rows="8">${shareText}</textarea>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function shareViaEmail(text) {
+  window.open(`mailto:?subject=Encrypted Message&body=${text}`);
+}
+
+function shareViaTwitter(url) {
+  const text = encodeURIComponent("👀 I sent you an encrypted message using quantum key distribution! Decrypt it here:");
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`);
+}
+
+function shareViaWhatsApp(text) {
+  window.open(`https://wa.me/?text=${text}`);
+}
+
+function shareViaTelegram(text) {
+  window.open(`https://t.me/share/url?url=${text}`);
+}
+
+function copyShareText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Share text copied to clipboard!');
+  });
+}
 // ------------------- Enter-to-run -------------------
 document.addEventListener("DOMContentLoaded", () => {
   const inputEl = document.getElementById("message");
@@ -306,5 +383,22 @@ document.addEventListener("DOMContentLoaded", () => {
         runQKD();
       }
     });
+  }
+  
+  // NEW: Auto-fill from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const key = urlParams.get('key');
+  const cipher = urlParams.get('cipher');
+  
+  if (key && cipher) {
+    // Format with spaces for display
+    const formattedKey = key.match(/.{1,4}/g)?.join(' ') || key;
+    const formattedCipher = cipher.match(/.{1,4}/g)?.join(' ') || cipher;
+    
+    document.getElementById('keyInput').value = formattedKey;
+    document.getElementById('ciphertext').value = formattedCipher;
+    
+    // Optionally scroll to decrypt section
+    document.querySelector('.decrypt-section').scrollIntoView({ behavior: 'smooth' });
   }
 });
